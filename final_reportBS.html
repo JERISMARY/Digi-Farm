@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Biosecurity Report</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(120deg, #004d40, #00695c); margin: 0; padding: 20px; color: #fff; }
+    h2 { text-align: center; font-size: 28px; margin-bottom: 20px; letter-spacing: 1px; }
+    .container { background: #fff; color: #333; padding: 25px; border-radius: 10px; box-shadow: 0px 4px 10px rgba(0,0,0,0.2); margin: 20px auto; max-width: 950px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background: #00796b; color: #fff; font-size: 15px; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    tr:hover { background: #f1fdf3; }
+    button { margin-top: 15px; padding: 10px 15px; background: #00796b; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #004d40; }
+  </style>
+</head>
+<body>
+
+<h2>Government Pig & Poultry Farm Biosecurity Report</h2>
+
+<div class="container">
+  <table id="reportTable">
+    <thead>
+      <tr>
+        <th>Farm</th>
+        <th>Clean Water</th>
+        <th>Visitor Log</th>
+        <th>Disinfection</th>
+        <th>Feed Safety</th>
+        <th>Waste Disposal</th>
+        <th>Protective Clothing</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button onclick="window.print()">Print Report</button>
+</div>
+
+<script>
+  const checklistData = JSON.parse(localStorage.getItem("checklistData") || "[]");
+  const tbody = document.querySelector("#reportTable tbody");
+  if(checklistData.length === 0){
+    tbody.innerHTML = `<tr><td colspan="7">No records found</td></tr>`;
+  } else {
+    checklistData.forEach(rec => {
+      const row = `<tr>
+        <td>${rec.farm}</td>
+        <td>${rec.cleanWater}</td>
+        <td>${rec.visitorLog}</td>
+        <td>${rec.disinfection}</td>
+        <td>${rec.feedSafety}</td>
+        <td>${rec.wasteDisposal}</td>
+        <td>${rec.protectiveClothing}</td>
+      </tr>`;
+      tbody.innerHTML += row;
+    });
+  }
+</script>
+
+</body>
+</html>

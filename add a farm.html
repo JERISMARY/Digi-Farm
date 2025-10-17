@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Farm Manager</title>
+</head>
+<body>
+  <h1>Add a Farm</h1>
+
+  <form id="farmForm">
+    <label>Farm Name: <input type="text" id="farmName" required></label><br><br>
+    <label>Animal Count: <input type="number" id="animalCount" required></label><br><br>
+    <label>Farm Info: <textarea id="farmInfo"></textarea></label><br><br>
+    <button type="submit">Add Farm</button>
+  </form>
+
+  <script>
+    const form = document.getElementById('farmForm');
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+
+      const farmName = document.getElementById('farmName').value;
+      const animalCount = document.getElementById('animalCount').value;
+      const farmInfo = document.getElementById('farmInfo').value;
+
+      fetch('addFarm.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          farmName: farmName,
+          animalCount: Number(animalCount),
+          farmInfo: farmInfo
+        })
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (res.status === 'success') {
+          alert('Farm saved! ID: ' + res.id);
+          form.reset();
+        } else {
+          alert('Error: ' + res.message);
+        }
+      })
+      .catch(err => alert('Request failed: ' + err));
+    });
+  </script>
+</body>
+</html>

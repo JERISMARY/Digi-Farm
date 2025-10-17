@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Saved Reports</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    header {
+      background: #00695c;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+    .report {
+      background: #fff;
+      padding: 20px 25px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .report:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+    }
+    .report h2 {
+      font-size: 18px;
+      color: #00695c;
+      margin: 0 0 15px;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 6px;
+    }
+    .report p {
+      margin: 6px 0;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .report b {
+      color: #444;
+    }
+    .no-data {
+      text-align: center;
+      font-size: 16px;
+      padding: 50px;
+      color: #888;
+    }
+    .btn {
+      display: inline-block;
+      background: #00695c;
+      color: #fff;
+      padding: 10px 18px;
+      font-size: 14px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background 0.2s ease;
+    }
+    .btn:hover {
+      background: #004d40;
+    }
+    .top-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+    }
+    .month-row { display:flex; gap:12px; align-items:center; margin-bottom:12px }
+    .month-row label { margin-right:8px; font-weight:600 }
+    .month-row .spacer { flex:1 }
+    .summary .chart-slot { width:260px }
+    /* canvas sizing helpers so Chart.js can calculate sizes */
+    .chart-wrap { display:block; width:100%; }
+    .chart-wrap.canvas-small { height:260px }
+  .chart-wrap.canvas-wide { height:180px }
+  .chart-wrap.canvas-full { height:220px }
+  </style>
+  <!-- Load Chart.js early so charts can be created synchronously -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<header>
+  <h1>📋 Saved Biosecurity Reports</h1>
+</header>
+
+<div class="container">
+  <div class="top-actions">
+    <a href="index.html" class="btn">➕ New Report</a>
+  </div>
+
+  <div class="month-row">
+    <label for="monthSelect">Select month:</label>
+    <input type="month" id="monthSelect" />
+    <div class="spacer"></div>
+    <button class="btn" id="downloadBtn">⬇️ Download Selected Month (CSV)</button>
+  </div>
+
+  <!-- 🔹 Summary and chart -->
+  <div id="summaryBox"></div>
+
+  <!-- 🔹 Score chart for reports (monthly) -->
+  <div id="scoreBox" class="report" style="margin-top:12px; display:none;">
+    <h2>Biosecurity Report Scores (Selected Month)</h2>
+    <div class="chart-wrap canvas-full"><canvas id="scoreChart" height="220"></canvas></div>
+  </div>
+
+  <!-- 🔹 Detailed reports -->
+  <div id="reportList"></div>
+</div>
+ <script>
+/* FIXED script: waits for DOM ready, renders charts safely, and fixes CSV download logic */
+document.addEventListener("DOMContentLoaded", () => {
+  // load storage keys
+  const reports = JSON.parse(localStorage.getItem('reports')) || [];
+  const healthLogs = JSON.parse(localStorage.getItem('healthLogs')) || [];
+  const inspectionLogs = JSON.parse(localStorage.getItem('inspectionLogs')) || [];
+
+  const container = document.getElementById('reportList');
+  const summaryBox = document.getElementById('summaryBox');
+  const monthInput = document.getElementById('monthSelect');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  function isoMonth(dateStr) {
+    if(!dateStr) return '';
+    const d = new Date(dateStr);
+    if(isNaN(d)) return '';
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  }
+
+  function filterByMonth(month) {
+    const rep = reports.filter(r => isoMonth(r.id) === month || isoMonth(r.createdAt) === month || isoMonth(r.date) === month || isoMonth(r.timestamp) === month);
+    const hv = healthLogs.filter(h => isoMonth(h.date) === month);
+    const ins = inspectionLogs.filter(i => isoMonth(i.date) === month || isoMonth(i.inspectionDate) === month);
+    return { rep, hv, ins };
+  }
+
+  function destroyCharts() {
+    if(window.monthChart) { try { window.monthChart.destroy(); } catch(e){} window.monthChart = null; }
+    if(window.weekChart) { try { window.weekChart.destroy(); } catch(e){} window.weekChart = null; }
+  }
+
+  function renderMonth(month) {
+    const { rep, hv, ins } = filterByMonth(month);
+    container.innerHTML = '';
+
+    if(rep.length===0 && hv.length===0 && ins.length===0) {
+      summaryBox.innerHTML = "<div class='report'><h2>Monthly Summary ("+month+")</h2><p><b>Reports:</b> 0 • <b>Vaccine logs:</b> 0 • <b>Inspections:</b> 0</p></div>";
+      container.innerHTML = "<div class='no-data'>No records for this month.</div>";
+      destroyCharts();
+      return;
+    }
+
+    const totalReports = rep.length;
+    const totalVaccines = hv.length;
+    const totalInspections = ins.length;
+
+    summaryBox.innerHTML = `
+      <div class='report summary-row' style='display:flex; gap:20px; align-items:flex-start; justify-content:space-between'>
+        <div style='flex:1'>
+          <h2>Monthly Summary (${month})</h2>
+          <p><b>Reports:</b> ${totalReports} • <b>Vaccine logs:</b> ${totalVaccines} • <b>Inspections:</b> ${totalInspections}</p>
+        </div>
+        <div style='display:flex; gap:16px; align-items:center'>
+          <div style='width:260px;'><div class="chart-wrap canvas-small"><canvas id='monthChart'></canvas></div></div>
+          <div style='width:420px;'><div class="chart-wrap canvas-wide"><canvas id='weekChart'></canvas></div></div>
+        </div>
+      </div>
+    `;
+
+    // destroy previous Chart instances if present
+    destroyCharts();
+
+    // Score chart: per-report percentage line for selected month
+    const scoreBox = document.getElementById('scoreBox');
+    const reportPercents = rep.map(r => {
+      const s = Number(r.score || 0);
+      const t = Number(r.total || 0) || 1;
+      return Math.round((s / t) * 100);
+    });
+    const reportLabels = rep.map(r => (r.site_name || 'Site') + ' • ' + (new Date(r.id)).toLocaleDateString());
+    if(reportPercents.length > 0) {
+      scoreBox.style.display = 'block';
+      // create/destroy existing score chart
+      if(window.scoreChart) { try { window.scoreChart.destroy(); } catch(e){} window.scoreChart = null; }
+      const scoreCanv = document.getElementById('scoreChart');
+      if(scoreCanv && scoreCanv.getContext) {
+        const sctx = scoreCanv.getContext('2d');
+        window.scoreChart = new Chart(sctx, {
+          type: 'line',
+          data: {
+            labels: reportLabels,
+            datasets: [{ label: 'Score %', data: reportPercents, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.12)', fill:true, tension:0.2 }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { min: 0, max: 100, ticks: { stepSize: 10 } } },
+            plugins: {
+              legend: { display:false },
+              tooltip: { callbacks: { label: function(ctx) { return ctx.parsed.y + '%'; } } }
+            }
+          }
+        });
+      }
+    } else {
+      scoreBox.style.display = 'none';
+      if(window.scoreChart) { try { window.scoreChart.destroy(); } catch(e){} window.scoreChart = null; }
+    }
+
+    // Monthly doughnut
+    const monthCanvas = document.getElementById('monthChart');
+    if (monthCanvas && monthCanvas.getContext) {
+      const ctx = monthCanvas.getContext('2d');
+      window.monthChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Reports','Vaccines','Inspections'],
+          datasets: [{ data: [totalReports,totalVaccines,totalInspections], backgroundColor:['#2ecc71','#3498db','#f1c40f'] }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } } }
+      });
+    }
+
+    // Weekly bar (last 7 days)
+    const daysArray = (n) => { const arr=[]; for(let i=n-1;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); arr.push(d); } return arr; };
+    const days = daysArray(7);
+    const labels = days.map(d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+    const toISODate = s => { const d=new Date(s); if(isNaN(d)) return ''; return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+
+    const repCounts = labels.map(lbl => rep.filter(r=> toISODate(r.id)===lbl || toISODate(r.createdAt)===lbl || toISODate(r.date)===lbl || toISODate(r.timestamp)===lbl).length);
+    const hvCounts = labels.map(lbl => hv.filter(h=> toISODate(h.date)===lbl).length);
+    const insCounts = labels.map(lbl => ins.filter(i=> toISODate(i.date)===lbl || toISODate(i.inspectionDate)===lbl).length);
+
+    const weekCanvas = document.getElementById('weekChart');
+    if (weekCanvas && weekCanvas.getContext) {
+      const wctx = weekCanvas.getContext('2d');
+      window.weekChart = new Chart(wctx, {
+        type:'bar',
+        data: {
+          labels,
+          datasets:[
+            { label:'Reports', data:repCounts, backgroundColor:'#2ecc71' },
+            { label:'Vaccines', data:hvCounts, backgroundColor:'#3498db' },
+            { label:'Inspections', data:insCounts, backgroundColor:'#f1c40f' }
+          ]
+        },
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } },
+          plugins:{ legend:{ position:'bottom' } }
+        }
+      });
+    }
+
+    // Render report / hv / inspection items below
+    rep.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'report';
+      div.innerHTML = `
+        <h2>Report ID: ${r.id}</h2>
+        <p><b>📍 Site:</b> ${r.site_name || '-'}</p>
+        <p><b>👤 Operator:</b> ${r.operator_name || '-'}</p>
+        <p><b>Score:</b> ${r.score || 0} / ${r.total || 0} (${ r.total ? Math.round((r.score/r.total)*100) : 0 }%)</p>
+        <p><b>📝 Notes:</b> ${r.notes || '-'}</p>
+      `;
+      container.appendChild(div);
+    });
+
+    hv.forEach(h => {
+      const div = document.createElement('div');
+      div.className = 'report';
+      div.innerHTML = `
+        <h2>Vaccine Log: ${h.date}</h2>
+        <p><b>Animal:</b> ${h.animal || '-'}</p>
+        <p><b>Vaccine:</b> ${h.vaccine || '-'}</p>
+        <p><b>Health:</b> ${h.health || '-'}</p>
+      `;
+      container.appendChild(div);
+    });
+
+    ins.forEach(i => {
+      const div = document.createElement('div');
+      div.className = 'report';
+      div.innerHTML = `
+        <h2>Inspection: ${i.date || i.inspectionDate || '-'}</h2>
+        <p><b>Inspector:</b> ${i.inspector || '-'}</p>
+        <p><b>Observation:</b> ${i.observation || '-'}</p>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // default to current month value
+  const now = new Date();
+  monthInput.value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+
+  // render on change
+  monthInput.addEventListener('change', () => renderMonth(monthInput.value));
+
+  // Single unified CSV download handler (exports selected month)
+  downloadBtn.addEventListener('click', () => {
+    const m = monthInput.value; if(!m) { alert('Select a month first'); return; }
+    const { rep, hv, ins } = filterByMonth(m);
+    if(rep.length===0 && hv.length===0 && ins.length===0) { alert('No records for this month.'); return; }
+
+    const rows = [];
+    rows.push(['type','id_or_date','site_or_animal','operator_or_vaccine','details'].join(','));
+    rep.forEach(r => rows.push(['report', r.id||'', r.site_name||'', r.operator_name||'', (r.notes||'').replace(/,/g,'')].join(',')));
+    hv.forEach(h => rows.push(['vaccine', h.date||'', h.animal||'', h.vaccine||'', (h.health||'').replace(/,/g,'')].join(',')));
+    ins.forEach(i => rows.push(['inspection', i.date||i.inspectionDate||'', i.farm||'', i.inspector||'', (i.observation||'').replace(/,/g,'')].join(',')));
+
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `records-${m}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
+
+  // initial render
+  renderMonth(monthInput.value);
+});
+</script>
+
+  </script>
+</body>
+</html>

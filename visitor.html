@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Farm Movement & Visitor Control</title>
+  <style>
+    body { 
+      font-family: 'Segoe UI', sans-serif; 
+      background: linear-gradient(120deg, #004d40, #00695c); 
+      margin: 0; padding: 20px; 
+      color: #333;
+    }
+    h2 { 
+      text-align: center; 
+      font-size: 28px; 
+      margin-bottom: 20px; 
+      color: #ffffff;
+      letter-spacing: 1px;
+    }
+    .container { 
+      background: #ffffff; 
+      padding: 25px; 
+      border-radius: 10px; 
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.2); 
+      margin: 20px auto; 
+      max-width: 1000px;
+    }
+    h3 { 
+      margin-bottom: 15px; 
+      color: #004d40;
+      border-left: 6px solid #00796b;
+      padding-left: 10px;
+    }
+    label { font-weight: bold; display: block; margin-top: 10px; }
+    input, select, textarea { 
+      margin: 6px 0; padding: 10px; 
+      border: 1px solid #00796b; border-radius: 6px; 
+      width: 100%; font-size: 15px;
+      background: #f9f9f9;
+    }
+    button { 
+      margin-top: 15px; 
+      padding: 12px 18px; 
+      background: #00796b; 
+      color: #fff; 
+      border: none; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-size: 15px; 
+      transition: background 0.3s, transform 0.2s; 
+    }
+    button:hover { 
+      background: #004d40; 
+      transform: scale(1.02); 
+    }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 20px; 
+      font-size: 14px; 
+    }
+    th, td { 
+      border: 1px solid #ddd; 
+      padding: 10px; 
+      text-align: center; 
+    }
+    th { 
+      background: #00796b; 
+      color: #fff; 
+      font-size: 15px;
+    }
+    tr:nth-child(even) { background: #f9f9f9; }
+    tr:hover { background: #f1fdf3; }
+    .delete-btn {
+      background: #c62828;
+      padding: 6px 12px;
+      border-radius: 5px;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.3s;
+    }
+    .delete-btn:hover { background: #b71c1c; }
+  </style>
+</head>
+<body>
+
+  <h2>Government Pig & Poultry Farm Movement & Visitor Control</h2>
+
+  <!-- Movement & Visitor Control Form -->
+  <div class="container">
+    <h3>Register Visitor / Movement</h3>
+
+    <label>Farm Type</label>
+    <select id="farmType">
+      <option value="Pig">Pig</option>
+      <option value="Poultry">Poultry</option>
+    </select>
+
+    <label>Visitor Name</label>
+    <input type="text" id="visitorName" placeholder="Enter visitor name">
+
+    <label>Purpose of Visit</label>
+    <textarea id="purpose" placeholder="Enter purpose of visit"></textarea>
+
+    <label>Entry Date & Time</label>
+    <input type="datetime-local" id="entryTime">
+
+    <label>Exit Date & Time</label>
+    <input type="datetime-local" id="exitTime">
+
+    <label>Vehicle / Movement Details</label>
+    <input type="text" id="movementDetails" placeholder="Vehicle number / transport details">
+
+    <button onclick="addVisitor()">Save Record</button>
+  </div>
+
+  <!-- Records Table -->
+  <div class="container">
+    <h3>Visitor & Movement Records</h3>
+    <table id="visitorTable">
+      <thead>
+        <tr>
+          <th>Farm</th>
+          <th>Visitor Name</th>
+          <th>Purpose</th>
+          <th>Entry Time</th>
+          <th>Exit Time</th>
+          <th>Movement Details</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    let visitorLogs = [];
+
+    function addVisitor() {
+      const farm = document.getElementById("farmType").value;
+      const name = document.getElementById("visitorName").value;
+      const purpose = document.getElementById("purpose").value;
+      const entry = document.getElementById("entryTime").value;
+      const exit = document.getElementById("exitTime").value;
+      const movement = document.getElementById("movementDetails").value;
+
+      if (!name || !purpose || !entry) {
+        alert("Please fill in required fields (Visitor Name, Purpose, Entry Time)");
+        return;
+      }
+
+      const record = { farm, name, purpose, entry, exit, movement };
+      visitorLogs.push(record);
+      renderVisitors();
+      clearForm();
+    }
+
+    function renderVisitors() {
+      const tbody = document.querySelector("#visitorTable tbody");
+      tbody.innerHTML = "";
+
+      visitorLogs.forEach((log, index) => {
+        const row = `<tr>
+          <td>${log.farm}</td>
+          <td>${log.name}</td>
+          <td>${log.purpose}</td>
+          <td>${log.entry}</td>
+          <td>${log.exit}</td>
+          <td>${log.movement}</td>
+          <td><button class="delete-btn" onclick="deleteVisitor(${index})">Delete</button></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    function deleteVisitor(index) {
+      visitorLogs.splice(index, 1);
+      renderVisitors();
+    }
+
+    function clearForm() {
+      document.getElementById("visitorName").value = "";
+      document.getElementById("purpose").value = "";
+      document.getElementById("entryTime").value = "";
+      document.getElementById("exitTime").value = "";
+      document.getElementById("movementDetails").value = "";
+    }
+  </script>
+
+</body>
+</html>

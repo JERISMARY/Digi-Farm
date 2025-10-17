@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Digital Farm Management Portal</title>
+<script>
+// DEMO DATA INJECTOR: Only runs if no data exists
+document.addEventListener('DOMContentLoaded', function() {
+    // Demo farms
+    if (!localStorage.getItem('farms')) {
+        const demoFarms = [
+            { farmName: 'Green Valley', inchargeName: 'Amit Kumar', address: 'Ranchi, Jharkhand', animalCount: 120, animalDetails: 'Pigs: 80\nPoultry: 40', createdAt: '2025-09-01 10:00', username: 'greenvalley', password: 'greenvalley123' },
+            { farmName: 'Sunrise Farm', inchargeName: 'Priya Singh', address: 'Jamshedpur, Jharkhand', animalCount: 90, animalDetails: 'Pigs: 50\nPoultry: 40', createdAt: '2025-09-03 14:30', username: 'sunrisefarm', password: 'sunrise2025' },
+            { farmName: 'Blue River', inchargeName: 'Rahul Das', address: 'Dhanbad, Jharkhand', animalCount: 60, animalDetails: 'Pigs: 60', createdAt: '2025-09-05 09:15', username: 'blueriver', password: 'blueriver2025' }
+        ];
+        localStorage.setItem('farms', JSON.stringify(demoFarms));
+    }
+    // Demo pig events
+    if (!localStorage.getItem('pigEvents')) {
+        const demoEvents = [
+            { farmName: 'Green Valley', eventType: 'Birth', eventDate: '2025-09-02', pigId: 'GV-001', details: '5 piglets born healthy.', reporter: 'Amit Kumar', createdAt: '2025-09-02 11:00' },
+            { farmName: 'Sunrise Farm', eventType: 'Affected', eventDate: '2025-09-04', pigId: 'SF-012', details: 'Pig showing mild fever.', reporter: 'Priya Singh', createdAt: '2025-09-04 15:00' },
+            { farmName: 'Blue River', eventType: 'Vaccination', eventDate: '2025-09-06', pigId: 'BR-021', details: 'Routine vaccination completed.', reporter: 'Rahul Das', createdAt: '2025-09-06 10:00' }
+        ];
+        localStorage.setItem('pigEvents', JSON.stringify(demoEvents));
+    }
+    // Demo activity logs
+    if (!localStorage.getItem('activityLogs')) {
+        const demoLogs = [
+            { msg: 'Farm <b>Green Valley</b> registered by admin at 2025-09-01 10:00', time: '2025-09-01 10:01' },
+            { msg: 'Farm <b>Sunrise Farm</b> registered by admin at 2025-09-03 14:30', time: '2025-09-03 14:31' },
+            { msg: 'Farm <b>Blue River</b> registered by admin at 2025-09-05 09:15', time: '2025-09-05 09:16' },
+            { msg: 'Pig event <b>Birth</b> reported for <b>Green Valley</b> by Amit Kumar.', time: '2025-09-02 11:01' },
+            { msg: 'Pig event <b>Affected</b> reported for <b>Sunrise Farm</b> by Priya Singh.', time: '2025-09-04 15:01' }
+        ];
+        localStorage.setItem('activityLogs', JSON.stringify(demoLogs));
+    }
+});
+</script>
+
+  <style>
+      a {
+          transition: all 0.3s ease;
+      }
+      a:hover {
+          color: #1a492d;
+          text-decoration: underline;
+          transform: translateY(-2px);
+      }
+      button {
+          transition: all 0.3s ease;
+      }
+      button:hover {
+          background: #258543;
+          color: #fff;
+      }
+  </style>
+</head>
+<body style="margin:0; background:#fafaf5; color:#1a492d; font-family:Arial, sans-serif;">
+<div id="main1" style="height: 100vh; width: 100vw;">
+
+    <nav style="position: fixed;top: 0; width: 100%; z-index: 10000;">  
+        <div style="background:#fff; padding:10px 30px; display:flex; align-items:center; box-shadow: 0 1px 8px rgba(0,0,0,0.03);">
+            <div style="width:48px; height:48px; background:#258543; border-radius:6px; margin-right:12px; transition:0.4s; "></div>
+            <div style=" color:#258543; margin-right:30px;">
+                <span style="font-size:22px; font-weight:bold;">Digital Farm Management Portal</span><br>
+                <small>Government of India</small>
+            </div>
+            <div style="display:flex; position: absolute;left: 45%; margin-left:20px; " >
+                <a href="#main1" style="margin-right:18px; text-decoration:none; color:#258543; font-size:18px;">Home</a>
+                <a href="#" style="margin-right:18px; text-decoration:none; color:#258543; font-size:18px;">About</a>
+                <a href="#main2" style="margin-right:18px; text-decoration:none; color:#258543; font-size:18px;">Features</a>
+                <a href="#" style="margin-right:18px; text-decoration:none; color:#258543; font-size:18px;">Reports</a>
+                <a href="#contact" style="margin-right:18px; text-decoration:none; color:#258543; font-size:18px;">Contact</a>
+                <div style=" top: 24px; right: 24px;">
+                <button id="qrFarmBtn" style="margin-right:18px; text-decoration:none; color:#258543; font-size:18px; border: none; background-color: white;">
+                    Generate Farm QR
+                </button>
+           
+            <div class="modal" id="qrFarmModal" style="margin-right:18px; text-decoration:none; color:#258543; font-size:18px;">
+                <div class="modal-content" style="max-width:400px;margin:auto;background:#fff;padding:28px;border-radius:16px;position:relative;">
+                    <span class="close-btn" onclick="closeModal('qrFarmModal')" style="position:absolute;top:18px;right:18px;font-size:22px;cursor:pointer;">&times;</span>
+                    <h3>Farm QR Code</h3>
+                    <select id="qrFarmSelect" style="width:100%;margin-bottom:12px;padding:8px;border-radius:8px;">
+                        <option value="">Select Farm</option>
+                    </select>
+                    <div id="qrFarmInfo" style="margin-bottom:18px;font-size:0.98em;color:#222;"></div>
+                    <div id="qrFarmCode" style="text-align:center;"></div>
+                </div>
+            </div>
+            <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+
+                    </div>
+                      <!-- Google Translate Widget -->
+                <div id="google_translate_element" style="padding-left: 20px; border: none;background-color: white;margin-right:18px; text-decoration:none; color:#258543; font-size:18px;"></div>
+                <script type="text/javascript">
+                function googleTranslateElementInit() {
+                new google.translate.TranslateElement({
+                    pageLanguage: 'en',
+                    includedLanguages: 'en,hi,bn,ta,te,gu,kn,ml,pa,mr,ur',
+                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+                }, 'google_translate_element');
+                }
+                </script>
+                <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+
+            </div>
+        </div>
+
+    </nav>
+    <div style=" background-image: url(sj.jpg);background-color: #22c55e; background-repeat: no-repeat; background-size: cover ; background-blend-mode: multiply; color:#fff; padding:42px 24px; min-height:360px; ">
+        <h1 style=" font-size:2.6em; margin-bottom:10px; font-weight:300; font-weight:bold;">
+            <b>Strengthening Biosecurity for Pig and <br>Poultry Farms</b>
+        </h1>
+        <p style="font-size:1.3em; line-height:1.8; margin-bottom:22px; ">
+            Comprehensive digital platform for farm registration,
+            biosecurity compliance, and health monitoring across<br> India's livestock sector.<br><br>
+        </p>
+        <div style="margin-top:26px;display:flex;flex-wrap:wrap;gap:12px;">
+            <button style="background:#e7f9ea; color:#258543; font-size:1em; margin-right:16px; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-family:inherit;" onclick="showModal('adminModal')">
+                Register Farm
+            </button>
+            <button style="background:#e7f9ea; color:#258543; font-size:1em; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-family:inherit;">
+                <a href="report.html" style="text-decoration: none; color: #258543">View Reports</a>
+            </button>
+         
+            <button style="background:#e7f9ea; color:#258543; font-size:1em; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-family:inherit;" onclick="showModal('viewPigEventsModal')">
+                View Pig Events
+            </button>
+<!-- ...existing code... -->
+
+<!-- Combined Pig Event Modal -->
+<div class="modal" id="pigEventCombinedModal">
+    <div class="modal-content" style="max-width:700px;min-width:320px;">
+        <span class="close-btn" onclick="closeModal('pigEventCombinedModal')">&times;</span>
+        <div style="display:flex;gap:12px;margin-bottom:18px;">
+            <button id="tabReportPigEvent" style="flex:1;background:#258543;color:#fff;border:none;padding:10px 0;border-radius:8px 8px 0 0;cursor:pointer;">Report Pig Event</button>
+            <button id="tabViewPigEvents" style="flex:1;background:#e7f9ea;color:#258543;border:none;padding:10px 0;border-radius:8px 8px 0 0;cursor:pointer;">View Pig Events</button>
+        </div>
+        <div id="reportPigEventSection">
+            <h3>Report Pig Event</h3>
+            <input type="text" id="eventFarmName" placeholder="Farm Name" style="width:100%;margin-bottom:8px;">
+            <select id="eventType" style="width:100%;margin-bottom:8px;padding:10px;border-radius:8px;">
+                <option value="Affected">Affected</option>
+                <option value="Birth">Birth</option>
+                <option value="Death">Death</option>
+                <option value="Vaccination">Vaccination</option>
+                <option value="Other">Other</option>
+            </select>
+            <input type="date" id="eventDate" style="width:100%;margin-bottom:8px;">
+            <input type="text" id="eventPigId" placeholder="Pig ID / Tag (optional)" style="width:100%;margin-bottom:8px;">
+            <textarea id="eventDetails" placeholder="Details (symptoms, birth info, etc.)" style="width:100%;padding:10px;margin-bottom:8px;border-radius:8px;"></textarea>
+            <input type="text" id="eventReporter" placeholder="Reported By (Farm Head Name)" style="width:100%;margin-bottom:8px;">
+            <button onclick="savePigEvent()" style="background:#258543;color:#fff;padding:10px 18px;border:none;border-radius:8px;cursor:pointer;font-size:1em;">Submit Event</button>
+        </div>
+        <div id="viewPigEventsSection" style="display:none;">
+            <h3>Pig Events Log</h3>
+            <input type="text" id="pigEventSearch" placeholder="Search by Farm, Type, Reporter..." style="width:100%;margin-bottom:8px;">
+            <div style="max-height:260px;overflow-y:auto;">
+                <table id="pigEventsTable" style="width:100%;border-collapse:collapse;font-size:0.98em;">
+                    <thead>
+                        <tr style="background:#e7f9ea;color:#258543;">
+                            <th>Date</th><th>Farm</th><th>Type</th><th>Pig ID</th><th>Details</th><th>Reporter</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button onclick="exportPigEventsCSV()" style="margin-top:10px;background:#258543;color:#fff;">Export CSV</button>
+        </div>
+    </div>
+</div>
+
+<!-- ...remove the old Pig Event and View Pig Events modals... -->
+
+<!-- ...existing code... -->
+
+<script>
+// ...existing code...
+
+// Show combined modal from both buttons
+document.querySelectorAll('[onclick*="pigEventModal"],[onclick*="viewPigEventsModal"]').forEach(btn => {
+    btn.onclick = function() {
+        showModal('pigEventCombinedModal');
+        showPigEventTab('report');
+        renderPigEventsTable();
+    };
+});
+
+// Tab switching logic
+document.getElementById('tabReportPigEvent').onclick = function() {
+    showPigEventTab('report');
+};
+document.getElementById('tabViewPigEvents').onclick = function() {
+    showPigEventTab('view');
+};
+
+function showPigEventTab(tab) {
+    if (tab === 'report') {
+        document.getElementById('reportPigEventSection').style.display = '';
+        document.getElementById('viewPigEventsSection').style.display = 'none';
+        document.getElementById('tabReportPigEvent').style.background = '#258543';
+        document.getElementById('tabReportPigEvent').style.color = '#fff';
+        document.getElementById('tabViewPigEvents').style.background = '#e7f9ea';
+        document.getElementById('tabViewPigEvents').style.color = '#258543';
+    } else {
+        document.getElementById('reportPigEventSection').style.display = 'none';
+        document.getElementById('viewPigEventsSection').style.display = '';
+        document.getElementById('tabReportPigEvent').style.background = '#e7f9ea';
+        document.getElementById('tabReportPigEvent').style.color = '#258543';
+        document.getElementById('tabViewPigEvents').style.background = '#258543';
+        document.getElementById('tabViewPigEvents').style.color = '#fff';
+        renderPigEventsTable();
+    }
+}
+
+// Update savePigEvent to refresh table if needed
+function savePigEvent() {
+    // ...existing code...
+    closeModal('pigEventCombinedModal');
+    // Optionally, show the view tab after submission:
+    // showPigEventTab('view');
+    renderPigEventsTable();
+}
+
+// Pig event search
+document.addEventListener('DOMContentLoaded', function() {
+    const search = document.getElementById('pigEventSearch');
+    if (search) search.addEventListener('input', renderPigEventsTable);
+});
+
+// ...existing code...
+</script>
+</div></div>
+<!-- ...existing code... -->
+<!-- Animal Health Prediction Modal -->
+<div class="modal" id="healthPredictModal">
+    <div class="modal-content" style="max-width:500px;">
+        <span class="close-btn" onclick="closeModal('healthPredictModal')">&times;</span>
+        <h3>Predict Animal Disease</h3>
+        <form id="healthPredictForm">
+            <input type="number" id="hp_age" placeholder="Age" required>
+            <input type="number" id="hp_weight" placeholder="Weight" required>
+            <select id="hp_feed_type">
+                <option value="Commercial">Commercial</option>
+                <option value="Home-mix">Home-mix</option>
+            </select>
+            <select id="hp_vaccination_status">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <input type="number" id="hp_farm_size" placeholder="Farm Size" required>
+            <input type="number" id="hp_hygiene_score" placeholder="Hygiene Score" required>
+            <input type="number" id="hp_temperature" placeholder="Temperature" required>
+            <input type="number" id="hp_humidity" placeholder="Humidity" required>
+            <select id="hp_coughing">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_diarrhea">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_lethargy">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_fever">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_skin_lesions">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_reproductive_failure">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_neurological_signs">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_vomiting">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <button type="submit" style="background:#258543;color:#fff;padding:10px 18px;border:none;border-radius:8px;cursor:pointer;font-size:1em;">Predict</button>
+        </form>
+        <div id="healthPredictResult" style="margin-top:16px;font-weight:bold;color:#2563eb;"></div>
+    </div>
+</div>
+<!-- ...existing code... -->
+    <div style="background:#fff; padding:38px 24px; text-align:center; font-size:1.1em;">
+        <h2 style=" color:#258543; font-size:2em; margin-bottom:12px;">
+            Comprehensive Farm Management Features
+        </h2>
+        <p style="font-family:Arial,sans-serif; color:#1a492d;">
+            Streamline your livestock operations with integrated tools for compliance, health monitoring, and biosecurity management.
+        </p>
+        <!-- Quick Farm Search -->
+        <div style="margin:18px auto 0 auto;max-width:400px;">
+            <input id="quickFarmSearch" type="text" placeholder="Quick Search Farm..." style="width:70%;padding:8px;border-radius:8px;border:1px solid #ccc;">
+            <button onclick="quickSearchFarm()" style="background:#258543;color:#fff;padding:8px 16px;border:none;border-radius:8px;">Search</button>
+        </div>
+        <div id="quickFarmResult" style="margin-top:10px;font-size:1em;color:#2563eb;"></div>
+        <!-- Recent Activity Log (toggleable) -->
+        <div style="margin:24px auto 0 auto;max-width:600px;text-align:center;">
+            <button id="toggleRecentLogBtn" style="background:#258543;color:#fff;padding:8px 18px;border:none;border-radius:8px;font-size:1em;display:inline-block;margin-bottom:10px;">Show Recent Activity Log</button>
+            <div id="recentActivityLogContainer" style="display:none;margin:0 auto;text-align:left;max-width:500px;">
+                <h4 style="color:#258543;text-align:center;">Recent Activity Log</h4>
+                <div id="recentActivityLog" style="background:#f8f9fa;padding:10px 14px;border-radius:8px;max-height:120px;overflow-y:auto;font-size:0.97em;"></div>
+                <button onclick="clearActivityLog()" style="margin-top:6px;background:#b91c1c;color:#fff;padding:6px 14px;border:none;border-radius:8px;font-size:0.95em;display:block;margin-left:auto;margin-right:auto;">Clear Activity Log</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="main2" style="width: 100vw; height: 100vh;">
+    <style>
+        body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background: linear-gradient(135deg, #e6f7f1, #f0f9ff, #fffbea);
+        color: #333;
+        }
+        section {
+        padding: 60px 20px;
+        }
+        section h2 {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #1e40af;
+        }
+        section p {
+        margin-top: 8px;
+        color: #ffffff92;
+        }
+        .features-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+        max-width: 1100px;
+        margin: 40px auto 0;
+        }
+        .feature-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        padding: 20px;
+        transition: all 0.3s ease;
+        text-align: left;
+        cursor: pointer;
+        }
+        .feature-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+        .feature-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        text-align: center;
+        }
+        .icon-box {
+        background: linear-gradient(135deg, #22c55e96, #2564eb99);
+        color: rgba(5, 107, 22, 0.578);
+        border-radius: 10px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 25px;
+        margin-right: 10px;
+        }
+        .feature-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        background: linear-gradient(135deg, #22c55e, #2563eb);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        color: transparent;
+        }
+        .feature-desc {
+        font-size: 0.99rem;
+        color: #555;
+        line-height: 1.5;
+        }
+        /* ---- Popup Modal Styles ---- */
+        .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.6);
+        align-items: center;
+        justify-content: center;
+        }
+        .modal-content {
+        background: #fff;
+        padding: 25px;
+        border-radius: 16px;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        animation: zoomIn 0.3s ease;
+        }
+        @keyframes zoomIn {
+        from {transform: scale(0.7);}
+        to {transform: scale(1);}
+        }
+        .modal h3 {
+        margin-bottom: 15px;
+        color: #2563eb;
+        }
+        .modal input {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        }
+        .modal button {
+        background: linear-gradient(135deg, #22c55e, #2563eb);
+        border: none;
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 8px;
+        margin-top: 12px;
+        cursor: pointer;
+        transition: 0.3s;
+        }
+        .modal button:hover {
+        opacity: 0.9;
+        }
+        .close-btn {
+        float: right;
+        font-size: 20px;
+        cursor: pointer;
+        color: #666;
+        }
+    </style>
+    <section id="features">
+        <h2 style="text-align: center;">Features</h2>
+        <p>Everything you need to implement effective biosecurity in Pig and Poultry Farms.</p>
+        <div class="features-container">
+            <div class="feature-card" id="farmRegistry">
+                <div class="feature-header">
+                    <div class="icon-box">🚜</div>
+                    <div class="feature-title">Farm Registry</div>
+                </div>
+                <p class="feature-desc">Maintain accurate records of sites, barns, flocks/litters, and locations.</p>
+            </div>
+            <div class="feature-card" id="biosecurity">
+                <div class="feature-header">
+                    <div class="icon-box">🛡</div>
+                    <div class="feature-title">Biosecurity Checklists</div>
+                </div>
+                <p class="feature-desc">Standardized checklists to ensure hygiene, PPE, cleaning protocols are followed.</p>
+            </div>
+            <div class="feature-card" id="healthLogs">
+                <div class="feature-header">
+                    <div class="icon-box">💉</div>
+                    <div class="feature-title">Health & Vaccination Logs</div>
+                </div>
+                <p class="feature-desc">Track preventive care and vaccine adherence with reminders.</p>
+            </div>
+            <div class="feature-card" id="movementControl">
+                <div class="feature-header">
+                    <div class="icon-box">👥</div>
+                    <div class="feature-title">Movement & Visitor Control</div>
+                </div>
+                <p class="feature-desc">Log vehicle entry, staff, and visitor movement with necessary pre-entry checks.</p>
+            </div>
+            <div class="feature-card" id="inspections">
+                <div class="feature-header">
+                    <div class="icon-box">📋</div>
+                    <div class="feature-title">Inspections & CAPA</div>
+                </div>
+                <p class="feature-desc">Record inspections, corrective and preventive actions with accountability.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-header">
+                    <div class="icon-box">📊</div>
+                    <div class="feature-title"><a href="dashboard.html" style="text-decoration: none; color: white;">Reports & Dashboards</a></div>
+                </div>
+                <p class="feature-desc">Visualize risk scores, completion rates, and anomalies for faster decision-making.</p>
+            </div>
+        </div>
+    </section>
+    <!-- Modals -->
+    <div class="modal" id="farmModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('farmModal')">&times;</span>
+            <h3>Farm Head Login</h3>
+            <input type="text" id="farmUser" placeholder="Username">
+            <input type="password" id="farmPass" placeholder="Password">
+            <button onclick="validateLogin('farmUser','farmPass','biosecurity_checklist.html')" >Login</button>
+        </div>
+    </div>
+    <!-- Add Farm Modal -->
+    <div class="modal" id="addFarmModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('addFarmModal')">&times;</span>
+            <h3>Add New Farm</h3>
+            <input type="text" id="farmName" placeholder="Farm Name">
+            <input type="text" id="inchargeName" placeholder="Farm Incharge Name">
+            <input type="email" id="farmEmail" placeholder="Email">
+            <input type="text" id="address" placeholder="Address">
+            <input type="number" id="animalCount" placeholder="Number of Animals">
+            <textarea id="animalDetails" placeholder="Animals Detail" style="width:100%;padding:10px;margin-top:8px;border:1px solid #ccc;border-radius:8px;"></textarea>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="saveFarm()">Save Farm</button>
+        </div>
+    </div>
+    <div class="modal" id="vet1Modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('vet1Modal')">&times;</span>
+            <h3>Veterinary Login</h3>
+            <input type="text" id="vetUser" placeholder="Username">
+            <input type="password" id="vetPass" placeholder="Password">
+            <button onclick="validateLogin('vetUser','vetPass','biosecurity_checklist.html')">Login</button>
+        </div>
+    </div>
+    <div class="modal" id="vetModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('vetModal')">&times;</span>
+            <h3>Veterinary Login</h3>
+            <input type="text" id="vetLoginUser" placeholder="Username">
+            <input type="password" id="vetLoginPass" placeholder="Password">
+            <button onclick="validateLogin('vetLoginUser','vetLoginPass','healthAndVaccine.html')">Login</button>
+        </div>
+    </div>
+    <div class="modal" id="visitorModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('visitorModal')">&times;</span>
+            <h3>Visitor Entry</h3>
+            <input type="text" id="visitorName" placeholder="Full Name">
+            <input type="text" id="visitorPurpose" placeholder="Purpose of Visit">
+            <input type="time" id="visitorTime">
+            <button onclick="redirectVisitor()">Submit</button>
+        </div>
+    </div>
+    <div class="modal" id="examinerModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('examinerModal')">&times;</span>
+            <h3>Examiner Login</h3>
+            <input type="text" id="examinerUser" placeholder="Username">
+            <input type="password" id="examinerPass" placeholder="Password">
+            <button onclick="validateLogin('examinerUser','examinerPass','examiner.html')">Login</button>
+        </div>
+    </div>
+</div>
+<!-- Admin Registry Modal -->
+<div class="modal" id="adminModal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('adminModal')">&times;</span>
+        <h3>Admin Login</h3>
+        <input type="text" id="adminUser" placeholder="Username">
+        <input type="password" id="adminPass" placeholder="Password">
+        <button onclick="validateAdminLogin()">Login</button>
+    </div>
+</div>
+<!-- After Login: Admin Actions Modal -->
+<div class="modal" id="adminActionsModal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('adminActionsModal')">&times;</span>
+        <h3>Admin Panel</h3>
+        <button onclick="showFarmUserList()">Manage Farms</button>
+        <hr style="margin:14px 0;">
+        <button onclick="showVetMgmt()">Manage Veterinary</button>
+        <button onclick="showExaminerMgmt()">Manage Examiner</button>
+        <div id="adminUserLists" style="margin-top:18px;"></div>
+    </div>
+</div>
+
+<script>
+// Show all farm usernames/passwords in admin panel
+function showFarmUserList() {
+    let farms = JSON.parse(localStorage.getItem("farms")) || [];
+    let html = `<h4 style="color:#258543;">Farm Head Users</h4>
+        <table style="width:100%;border-collapse:collapse;font-size:0.98em;">
+            <thead><tr style="background:#e7f9ea;color:#258543;">
+                <th>Farm Name</th><th>Email</th><th>Username</th><th>Password</th><th>Action</th>
+            </tr></thead>
+            <tbody>
+                ${farms.length === 0 ? `<tr><td colspan="5" style="color:#888;text-align:center;">No farms found.</td></tr>` :
+                    farms.map((f,i) => `<tr>
+                        <td>${f.farmName}</td>
+                        <td>${f.email||''}</td>
+                        <td>${f.username}</td>
+                        <td>${f.password}</td>
+                        <td>
+                            <button onclick="deleteFarm(${i})" style="background:#b91c1c;color:#fff;padding:4px 10px;border-radius:6px;border:none;">Delete</button>
+                        </td>
+                    </tr>`).join('')
+                }
+            </tbody>
+        </table>
+        <button onclick="openAddFarm()" style="margin-top:12px;background:#258543;color:#fff;padding:8px 16px;border:none;border-radius:8px;">Add Farm</button>
+        <button onclick="window.location.href='viewFarms.html'" style="margin-top:12px;background:#258543;color:#fff;padding:8px 16px;border:none;border-radius:8px;">View Farms</button>
+    `;
+    document.getElementById('adminUserLists').innerHTML = html;
+}
+
+// Delete farm by index
+function deleteFarm(idx) {
+    let farms = JSON.parse(localStorage.getItem("farms")) || [];
+    if (!confirm('Delete this farm?')) return;
+    farms.splice(idx, 1);
+    localStorage.setItem("farms", JSON.stringify(farms));
+    showFarmUserList();
+}
+
+// Call showFarmUserList when admin logs in
+function validateAdminLogin() {
+    const username = document.getElementById('adminUser').value.trim();
+    const password = document.getElementById('adminPass').value.trim();
+    const passwordPattern = /^(?=.*[0-9]).{8,}$/;
+    if (username === "" || password === "") {
+        alert("Please enter both username and password.");
+        return;
+    }
+    if (!passwordPattern.test(password)) {
+        alert("Password must be at least 8 characters and contain at least one number.");
+        return;
+    }
+    closeModal('adminModal');
+    showModal('adminActionsModal');
+    showFarmUserList();
+}
+</script>
+<!-- Veterinary Management Modal -->
+<div class="modal" id="vetMgmtModal">
+    <div class="modal-content" style="max-width:500px;">
+        <span class="close-btn" onclick="closeModal('vetMgmtModal')">&times;</span>
+        <h3>Veterinary Management</h3>
+        <form id="addVetForm" onsubmit="addVet(event)">
+            <input type="text" id="vetMgmtName" placeholder="Veterinary Name" required>
+            <input type="email" id="vetMgmtEmail" placeholder="Email" required>
+            <input type="text" id="vetMgmtUser" placeholder="Username" required>
+            <input type="password" id="vetMgmtPass" placeholder="Password" required>
+            <button type="submit">Add Veterinary</button>
+        </form>
+        <div style="margin-top:12px;">
+            <h4 style="color:#258543;">All Veterinary</h4>
+            <table style="width:100%;border-collapse:collapse;font-size:0.98em;">
+                <thead><tr style="background:#e7f9ea;color:#258543;"><th>Name</th><th>Email</th><th>Username</th><th>Password</th><th>Action</th></tr></thead>
+                <tbody id="vetList"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Examiner Management Modal -->
+<div class="modal" id="examinerMgmtModal">
+    <div class="modal-content" style="max-width:500px;">
+        <span class="close-btn" onclick="closeModal('examinerMgmtModal')">&times;</span>
+        <h3>Examiner Management</h3>
+        <form id="addExaminerForm" onsubmit="addExaminer(event)">
+            <input type="text" id="examinerMgmtName" placeholder="Examiner Name" required>
+            <input type="email" id="examinerMgmtEmail" placeholder="Email" required>
+            <input type="text" id="examinerMgmtUser" placeholder="Username" required>
+            <input type="password" id="examinerMgmtPass" placeholder="Password" required>
+            <button type="submit">Add Examiner</button>
+        </form>
+        <div style="margin-top:12px;">
+            <h4 style="color:#258543;">All Examiners</h4>
+            <table style="width:100%;border-collapse:collapse;font-size:0.98em;">
+                <thead><tr style="background:#e7f9ea;color:#258543;"><th>Name</th><th>Email</th><th>Username</th><th>Password</th><th>Action</th></tr></thead>
+                <tbody id="examinerList"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+// --- Veterinary Management ---
+function showVetMgmt() {
+    closeModal('adminActionsModal');
+    renderVetList();
+    showModal('vetMgmtModal');
+}
+function addVet(e) {
+    e.preventDefault();
+    const name = document.getElementById('vetMgmtName').value.trim();
+    const email = document.getElementById('vetMgmtEmail').value.trim();
+    const username = document.getElementById('vetMgmtUser').value.trim();
+    const password = document.getElementById('vetMgmtPass').value.trim();
+    if (!name || !email || !username || !password) return;
+    let vets = JSON.parse(localStorage.getItem('veterinaries') || '[]');
+    if (vets.some(v => v.username === username)) { alert('Username already exists!'); return; }
+    vets.push({ name, email, username, password });
+    localStorage.setItem('veterinaries', JSON.stringify(vets));
+    document.getElementById('vetMgmtName').value = '';
+    document.getElementById('vetMgmtEmail').value = '';
+    document.getElementById('vetMgmtUser').value = '';
+    document.getElementById('vetMgmtPass').value = '';
+    renderVetList();
+}
+function renderVetList() {
+    let vets = JSON.parse(localStorage.getItem('veterinaries') || '[]');
+    document.getElementById('vetList').innerHTML = vets.length === 0 ? '<tr><td colspan="5" style="color:#888;text-align:center;">No veterinary found.</td></tr>' :
+        vets.map((v,i) => `<tr><td>${v.name}</td><td>${v.email||''}</td><td>${v.username}</td><td>${v.password}</td><td><button onclick="deleteVet(${i})" style="background:#b91c1c;color:#fff;padding:4px 10px;border-radius:6px;border:none;">Delete</button></td></tr>`).join('');
+}
+function deleteVet(idx) {
+    let vets = JSON.parse(localStorage.getItem('veterinaries') || '[]');
+    if (!confirm('Delete this veterinary?')) return;
+    vets.splice(idx, 1);
+    localStorage.setItem('veterinaries', JSON.stringify(vets));
+    renderVetList();
+}
+
+// --- Examiner Management ---
+function showExaminerMgmt() {
+    closeModal('adminActionsModal');
+    renderExaminerList();
+    showModal('examinerMgmtModal');
+}
+function addExaminer(e) {
+    e.preventDefault();
+    const name = document.getElementById('examinerMgmtName').value.trim();
+    const email = document.getElementById('examinerMgmtEmail').value.trim();
+    const username = document.getElementById('examinerMgmtUser').value.trim();
+    const password = document.getElementById('examinerMgmtPass').value.trim();
+    if (!name || !email || !username || !password) return;
+    let examiners = JSON.parse(localStorage.getItem('examiners') || '[]');
+    if (examiners.some(v => v.username === username)) { alert('Username already exists!'); return; }
+    examiners.push({ name, email, username, password });
+    localStorage.setItem('examiners', JSON.stringify(examiners));
+    document.getElementById('examinerMgmtName').value = '';
+    document.getElementById('examinerMgmtEmail').value = '';
+    document.getElementById('examinerMgmtUser').value = '';
+    document.getElementById('examinerMgmtPass').value = '';
+    renderExaminerList();
+}
+function renderExaminerList() {
+    let examiners = JSON.parse(localStorage.getItem('examiners') || '[]');
+    document.getElementById('examinerList').innerHTML = examiners.length === 0 ? '<tr><td colspan="5" style="color:#888;text-align:center;">No examiner found.</td></tr>' :
+        examiners.map((v,i) => `<tr><td>${v.name}</td><td>${v.email||''}</td><td>${v.username}</td><td>${v.password}</td><td><button onclick="deleteExaminer(${i})" style="background:#b91c1c;color:#fff;padding:4px 10px;border-radius:6px;border:none;">Delete</button></td></tr>`).join('');
+}
+function deleteExaminer(idx) {
+    let examiners = JSON.parse(localStorage.getItem('examiners') || '[]');
+    if (!confirm('Delete this examiner?')) return;
+    examiners.splice(idx, 1);
+    localStorage.setItem('examiners', JSON.stringify(examiners));
+    renderExaminerList();
+}
+</script>
+<!-- Activity Log Panel -->
+<div id="activityLogPanel" style="position:fixed;bottom:30px;left:30px;z-index:9998;width:340px;max-width:95vw;background:#fff;border-radius:12px;box-shadow:0 4px 24px #0002;display:none;flex-direction:column;">
+    <div style="background:#258543;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;font-weight:bold;display:flex;align-items:center;justify-content:space-between;">
+        <span>Activity Log</span>
+        <span style="cursor:pointer;font-size:20px;" onclick="document.getElementById('activityLogPanel').style.display='none'">&times;</span>
+    </div>
+    <div id="activityLogList" style="height:220px;overflow-y:auto;padding:12px;background:#f8f9fa;font-size:0.98em;"></div>
+</div>
+<button id="openLogBtn" style="position:fixed;bottom:30px;left:30px;z-index:9999;background:#258543;color:#fff;border:none;border-radius:50%;width:56px;height:56px;box-shadow:0 2px 8px #0002;font-size:28px;cursor:pointer;">📝</button>
+
+<section id="contact">
+    <style>
+        footer {
+            background: #003366e2;  /* dark blue */
+            color: #fff;
+            padding: 40px 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        footer h3 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            padding-bottom: 5px;
+        }
+        footer ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        footer ul li {
+            margin: 8px 0;
+        }
+        footer ul li a {
+            color: #ddd;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        footer ul li a:hover {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .contact-info p {
+            margin: 6px 0;
+        }
+        .bottom-bar {
+            background: #002244;
+            color: #aaa;
+            padding: 12px;
+            font-size: 0.9em;
+        }
+    </style>
+
+    <!-- Footer Section -->
+    <footer style="bottom: 0;">
+        <!-- Government / Company Info -->
+        <div>
+            <h3>Government of Jharkhand | Ministry of Animal Dairying</h3>
+            <p>Digital guidelines platform for farm management and biosecurity compliance in pig and poultry farming operations.</p>
+        </div>
+        <!-- Quick Links -->
+        <div style="text-align: center;">
+            <h3>Quick Links</h3>
+            <ul style="text-align: center;">
+                <li><a href="#">Privacy Policy</a></li>
+                <li><a href="#">Terms of Service</a></li>
+                <li><a href="#">Help & Support</a></li>
+                <li><a href="#">System Status</a></li>
+            </ul>
+        </div>
+        <!-- Contact Information -->
+        <div class="contact-info">
+            <h3>Contact Information</h3>
+            <p>📍 123 AgriTech Tower, New Delhi, India</p>
+            <p>📧 support@digitalfarm.gov.in</p>
+            <p>📞 +91-9876543210</p>
+        </div>
+    </footer>
+    <!-- Bottom Bar -->
+    <div class="bottom-bar" style="text-align: center;">
+        © 2025 Digital Farm Management | All Rights Reserved
+    </div>
+</section>
+<!-- Chat & Support Widget -->
+<div id="chatWidget" style="position:fixed;bottom:30px;right:30px;z-index:9999;">
+    <div id="chatBox" style="display:none;background:#fff;border-radius:12px;box-shadow:0 4px 24px #0002;width:320px;max-width:90vw;">
+        <div style="background:#258543;color:#fff;padding:12px 16px;border-radius:12px 12px 0 0;font-weight:bold;display:flex;align-items:center;justify-content:space-between;">
+            <span>Support Chat</span>
+            <span style="cursor:pointer;font-size:20px;" onclick="document.getElementById('chatBox').style.display='none'">&times;</span>
+        </div>
+        <div id="chatMessages" style="height:220px;overflow-y:auto;padding:12px;background:#f8f9fa;font-size:0.98em;"></div>
+        <form id="chatForm" style="display:flex;border-top:1px solid #eee;">
+            <input id="chatInput" type="text" placeholder="Type your message..." autocomplete="off" style="flex:1;padding:10px;border:none;border-radius:0 0 0 12px;outline:none;">
+            <button type="submit" style="background:#258543;color:#fff;border:none;padding:0 18px;border-radius:0 0 12px 0;cursor:pointer;font-weight:bold;">Send</button>
+        </form>
+    </div>
+    <button id="openChatBtn" style="background:#258543;color:#fff;border:none;border-radius:50%;width:56px;height:56px;box-shadow:0 2px 8px #0002;font-size:28px;cursor:pointer;">💬</button>
+</div>
+<script>
+        // ...existing code...
+
+    // Show modal
+    function showModal(id) {
+        document.getElementById(id).style.display = 'flex';
+    }
+    // Close modal
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+    // Validation function
+    function validateLogin(userId, passId, redirectPage) {
+        const username = document.getElementById(userId).value.trim();
+        const password = document.getElementById(passId).value.trim();
+        if (username === "" || password === "") {
+            alert("Please enter both username and password.");
+            return;
+        }
+        // Farm login
+        if (userId === 'farmUser' && passId === 'farmPass') {
+            let farms = JSON.parse(localStorage.getItem("farms")) || [];
+            const farmUser = farms.find(f => f.username === username && f.password === password);
+            if (!farmUser) {
+                alert("Invalid username or password. Only registered farm users can log in.");
+                return;
+            }
+            window.location.href = redirectPage;
+        }
+        // Veterinary login (accept both vetUser/vetPass and vetLoginUser/vetLoginPass)
+        else if (
+            (userId === 'vetUser' && passId === 'vetPass') ||
+            (userId === 'vetLoginUser' && passId === 'vetLoginPass')
+        ) {
+            let vets = JSON.parse(localStorage.getItem('veterinaries') || '[]');
+            const vet = vets.find(v => v.username === username && v.password === password);
+            if (!vet) {
+                alert("Invalid username or password. Only registered veterinary users can log in.");
+                return;
+            }
+            window.location.href = redirectPage;
+        }
+        // Examiner login
+        else if ((userId === 'examinerUser' && passId === 'examinerPass')) {
+            let examiners = JSON.parse(localStorage.getItem('examiners') || '[]');
+            const examiner = examiners.find(v => v.username === username && v.password === password);
+            if (!examiner) {
+                alert("Invalid username or password. Only registered examiner users can log in.");
+                return;
+            }
+            window.location.href = redirectPage;
+        }
+        else {
+            alert("Invalid login type.");
+        }
+    }
+    // Visitor entry (simple check)
+    function redirectVisitor() {
+        const name = document.getElementById('visitorName').value.trim();
+        const purpose = document.getElementById('visitorPurpose').value.trim();
+        const time = document.getElementById('visitorTime').value;
+        if (name === "" || purpose === "" || time === "") {
+            alert("Please fill all fields.");
+            return;
+        }
+        window.location.href = "visitor.html";
+    }
+    // Event Listeners
+    document.getElementById('biosecurity').addEventListener('click', () => showModal('farmModal')); // <-- changed line
+    document.getElementById('healthLogs').addEventListener('click', () => showModal('vetModal'));
+    document.getElementById('movementControl').addEventListener('click', () => showModal('visitorModal'));
+    document.getElementById('inspections').addEventListener('click', () => showModal('examinerModal'));
+    // Change Farm Registry → Admin Login
+    document.getElementById('farmRegistry').addEventListener('click', () => showModal('adminModal'));
+    // Admin login
+    function validateAdminLogin() {
+        const username = document.getElementById('adminUser').value.trim();
+        const password = document.getElementById('adminPass').value.trim();
+        const passwordPattern = /^(?=.*[0-9]).{8,}$/;
+        if (username === "" || password === "") {
+            alert("Please enter both username and password.");
+            return;
+        }
+        if (!passwordPattern.test(password)) {
+            alert("Password must be at least 8 characters and contain at least one number.");
+            return;
+        }
+        closeModal('adminModal');
+        showModal('adminActionsModal');
+    }
+    // Admin Add Farm flow
+    function openAddFarm() {
+        closeModal('adminActionsModal');
+        showModal('addFarmModal');
+    }
+    // Save Farm into localStorage with unique username and password
+    function saveFarm() {
+        const farmName = document.getElementById('farmName').value.trim();
+        const inchargeName = document.getElementById('inchargeName').value.trim();
+        const email = document.getElementById('farmEmail').value.trim();
+        const address = document.getElementById('address').value.trim();
+        const animalCount = document.getElementById('animalCount').value.trim();
+        const animalDetails = document.getElementById('animalDetails').value.trim();
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        if (farmName === "" || inchargeName === "" || email === "" || address === "" || animalCount === "" || animalDetails === "" || username === "" || password === "") {
+            alert("⚠ Please fill all fields before saving.");
+            return;
+        }
+        const passwordPattern = /^(?=.*[0-9]).{8,}$/;
+        if (!passwordPattern.test(password)) {
+            alert("Password must be at least 8 characters and contain at least one number.");
+            return;
+        }
+        let farms = JSON.parse(localStorage.getItem("farms")) || [];
+        // Check for unique username and password
+        const usernameExists = farms.some(f => f.username === username);
+        const passwordExists = farms.some(f => f.password === password);
+        if (usernameExists) {
+            alert("Username already exists. Please choose a different username.");
+            return;
+        }
+        if (passwordExists) {
+            alert("Password already exists. Please choose a different password.");
+            return;
+        }
+        const farm = {
+            farmName,
+            inchargeName,
+            email,
+            address,
+            animalCount,
+            animalDetails,
+            createdAt: new Date().toLocaleString(),
+            username,
+            password
+        };
+        farms.push(farm);
+        localStorage.setItem("farms", JSON.stringify(farms));
+        // Log activity
+        addActivityLog(`Farm <b>${farmName}</b> registered by admin at ${farm.createdAt}`);
+        updateLiveDashboard();
+        alert("✅ Farm saved successfully!");
+        document.getElementById('farmName').value = "";
+        document.getElementById('inchargeName').value = "";
+        document.getElementById('farmEmail').value = "";
+        document.getElementById('address').value = "";
+        document.getElementById('animalCount').value = "";
+        document.getElementById('animalDetails').value = "";
+        document.getElementById('username').value = "";
+        document.getElementById('password').value = "";
+        closeModal('addFarmModal');
+    }
+    // Pig Event Reporting
+    function savePigEvent() {
+        const farmName = document.getElementById('eventFarmName').value.trim();
+        const eventType = document.getElementById('eventType').value;
+        const eventDate = document.getElementById('eventDate').value;
+        const pigId = document.getElementById('eventPigId').value.trim();
+        const details = document.getElementById('eventDetails').value.trim();
+        const reporter = document.getElementById('eventReporter').value.trim();
+        if (!farmName || !eventType || !eventDate || !details || !reporter) {
+            alert('Please fill all required fields.');
+            return;
+        }
+        let events = JSON.parse(localStorage.getItem('pigEvents') || '[]');
+        const event = {
+            farmName,
+            eventType,
+            eventDate,
+            pigId,
+            details,
+            reporter,
+            createdAt: new Date().toLocaleString()
+        };
+        events.push(event);
+        localStorage.setItem('pigEvents', JSON.stringify(events));
+        addActivityLog(`Pig event <b>${eventType}</b> reported for <b>${farmName}</b> by ${reporter}.`);
+        showPigEventNotif();
+        alert('Pig event reported successfully!');
+        document.getElementById('eventFarmName').value = '';
+        document.getElementById('eventType').value = 'Affected';
+        document.getElementById('eventDate').value = '';
+        document.getElementById('eventPigId').value = '';
+        document.getElementById('eventDetails').value = '';
+        document.getElementById('eventReporter').value = '';
+        closeModal('pigEventModal');
+        renderPigEventsTable();
+    }
+
+    // Show notification for new pig event
+    function showPigEventNotif() {
+        const notif = document.getElementById('pigEventNotif');
+        notif.style.display = 'block';
+        setTimeout(() => { notif.style.display = 'none'; }, 3500);
+    }
+
+    // Render pig events table in modal
+    function renderPigEventsTable() {
+        let events = JSON.parse(localStorage.getItem('pigEvents') || '[]');
+        const search = (document.getElementById('pigEventSearch')?.value || '').toLowerCase();
+        const tbody = document.querySelector('#pigEventsTable tbody');
+        tbody.innerHTML = events
+            .filter(ev => !search ||
+                ev.farmName.toLowerCase().includes(search) ||
+                ev.eventType.toLowerCase().includes(search) ||
+                ev.reporter.toLowerCase().includes(search) ||
+                ev.details.toLowerCase().includes(search) ||
+                (ev.pigId||'').toLowerCase().includes(search)
+            )
+            .map(ev => `<tr><td>${ev.eventDate}</td><td>${ev.farmName}</td><td>${ev.eventType}</td><td>${ev.pigId||''}</td><td>${ev.details}</td><td>${ev.reporter}</td></tr>`)
+            .join('') || '<tr><td colspan="6" style="color:#888;">No events found.</td></tr>';
+    }
+
+    // Export pig events as CSV
+    function exportPigEventsCSV() {
+        let events = JSON.parse(localStorage.getItem('pigEvents') || '[]');
+        if (!events.length) { alert('No events to export.'); return; }
+        let csv = 'Date,Farm,Type,Pig ID,Details,Reporter\n';
+        csv += events.map(ev => [ev.eventDate, ev.farmName, ev.eventType, ev.pigId||'', ev.details.replace(/\n/g,' '), ev.reporter].map(x => '"'+(x||'')+'"').join(',')).join('\n');
+        const blob = new Blob([csv], {type:'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'pig_events.csv';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Open pig events modal and render table
+    document.querySelector('[onclick*="viewPigEventsModal"]').addEventListener('click', function() {
+        renderPigEventsTable();
+    });
+    // Search pig events
+    document.addEventListener('DOMContentLoaded', function() {
+        const search = document.getElementById('pigEventSearch');
+        if (search) search.addEventListener('input', renderPigEventsTable);
+    });
+
+    // Quick Farm Search
+    function quickSearchFarm() {
+        const q = document.getElementById('quickFarmSearch').value.trim().toLowerCase();
+        let farms = JSON.parse(localStorage.getItem('farms')) || [];
+        const res = farms.filter(f => f.farmName.toLowerCase().includes(q) || f.inchargeName.toLowerCase().includes(q) || f.address.toLowerCase().includes(q));
+        document.getElementById('quickFarmResult').innerHTML = res.length ?
+            res.map(f => `<div style='margin-bottom:6px;'><b>${f.farmName}</b> (${f.inchargeName})<br><span style='color:#555;'>${f.address}</span></div>`).join('') :
+            '<span style="color:#b91c1c;">No matching farm found.</span>';
+    }
+
+    // Show/hide recent activity log in dashboard
+    function renderRecentActivityLog() {
+        let logs = JSON.parse(localStorage.getItem('activityLogs')) || [];
+        document.getElementById('recentActivityLog').innerHTML = logs.length === 0 ? '<div style="color:#888;">No activity yet.</div>' :
+            logs.slice(0,6).map(l => `<div style='margin-bottom:6px;'><span style='color:#258543;font-weight:bold;'>[${l.time}]</span> <span>${l.msg}</span></div>`).join('');
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        renderRecentActivityLog();
+        const btn = document.getElementById('toggleRecentLogBtn');
+        const container = document.getElementById('recentActivityLogContainer');
+        btn.addEventListener('click', function() {
+            if (container.style.display === 'none' || container.style.display === '') {
+                container.style.display = 'block';
+                btn.textContent = 'Hide Recent Activity Log';
+            } else {
+                container.style.display = 'none';
+                btn.textContent = 'Show Recent Activity Log';
+            }
+        });
+    });
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'activityLogs') renderRecentActivityLog();
+    });
+
+    // Clear all activity logs
+    function clearActivityLog() {
+        if (confirm('Clear all activity logs?')) {
+            localStorage.removeItem('activityLogs');
+            renderRecentActivityLog();
+            renderActivityLog();
+            // Also trigger storage event manually for same-tab update
+            window.dispatchEvent(new StorageEvent('storage', { key: 'activityLogs' }));
+        }
+    }
+
+    function addActivityLog(msg) {
+        let logs = JSON.parse(localStorage.getItem('activityLogs')) || [];
+        logs.unshift({msg, time: new Date().toLocaleString()});
+        if (logs.length > 50) logs = logs.slice(0, 50); // keep last 50
+        localStorage.setItem('activityLogs', JSON.stringify(logs));
+        renderRecentActivityLog();
+        renderActivityLog();
+        // Also trigger storage event manually for same-tab update
+        window.dispatchEvent(new StorageEvent('storage', { key: 'activityLogs' }));
+    }
+
+    function renderActivityLog() {
+        let logs = JSON.parse(localStorage.getItem('activityLogs')) || [];
+        activityLogList.innerHTML = logs.length === 0 ? '<div style="color:#888;">No activity yet.</div>' :
+            logs.map(l => `<div style='margin-bottom:10px;'><span style='color:#258543;font-weight:bold;'>[${l.time}]</span> <span>${l.msg}</span></div>`).join('');
+    }
+</script>
+<script>
+// Live Dashboard JS
+function updateLiveDashboard() {
+    let farms = JSON.parse(localStorage.getItem("farms")) || [];
+    document.getElementById('dashTotalFarms').textContent = farms.length;
+    let totalAnimals = 0;
+    let lastFarm = '-';
+    if (farms.length > 0) {
+        farms.forEach(f => {
+            const n = parseInt(f.animalCount);
+            if (!isNaN(n)) totalAnimals += n;
+        });
+        const last = farms[farms.length-1];
+        lastFarm = `<b>${last.farmName}</b> <br><span style='font-size:0.95em;color:#258543;'>${last.createdAt}</span>`;
+    }
+    document.getElementById('dashTotalAnimals').textContent = totalAnimals;
+    document.getElementById('dashLastFarm').innerHTML = lastFarm;
+}
+// Update dashboard on page load and when storage changes
+window.addEventListener('DOMContentLoaded', updateLiveDashboard);
+window.addEventListener('storage', function(e) {
+    if (e.key === 'farms') updateLiveDashboard();
+});
+</script>
+<script>
+// Chat & Support Widget JS
+const chatWidget = document.getElementById('chatWidget');
+const chatBox = document.getElementById('chatBox');
+const openChatBtn = document.getElementById('openChatBtn');
+const chatMessages = document.getElementById('chatMessages');
+const chatForm = document.getElementById('chatForm');
+const chatInput = document.getElementById('chatInput');
+
+openChatBtn.onclick = function() {
+    chatBox.style.display = 'block';
+    chatInput.focus();
+};
+
+function appendMessage(text, sender) {
+    const msg = document.createElement('div');
+    msg.style.margin = '8px 0';
+    msg.style.textAlign = sender === 'user' ? 'right' : 'left';
+    msg.innerHTML = `<span style="display:inline-block;max-width:80%;padding:8px 12px;border-radius:12px;background:${sender==='user'?'#e7f9ea':'#eee'};color:#222;">${text}</span>`;
+    chatMessages.appendChild(msg);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function botReply(userMsg) {
+    const msg = userMsg.toLowerCase();
+    if (msg.includes('hello') || msg.includes('hi')) return "Hello! Welcome to the Digital Farm Management Portal. How can I assist you today?";
+    if (msg.includes('register') || msg.includes('farm')) return "To register a farm, click the 'Register Farm' button. You can manage farm details, animals, and compliance from your dashboard.";
+    if (msg.includes('biosecurity') || msg.includes('checklist')) return "Biosecurity checklists help ensure hygiene, PPE, and cleaning protocols are followed. Access them from the Features section.";
+    if (msg.includes('health') || msg.includes('vaccine')) return "Health & Vaccination logs let you track preventive care and vaccine schedules for your animals.";
+    if (msg.includes('report') && msg.includes('pig')) return "To report a pig event, use the 'Report Pig Event' button. You can log births, illnesses, deaths, and vaccinations.";
+    if ((msg.includes('download') || msg.includes('export')) && msg.includes('report')) return "To download a report, go to the Reports section and click the 'Export CSV' button. This will save the report to your device.";
+    if (msg.includes('password requirements')) return "Passwords must be at least 8 characters and contain at least one number for security.";
+    if (msg.includes('farm stats') || msg.includes('statistics')) return "You can view farm statistics and animal counts on the dashboard at the top of the homepage.";
+    if (msg.includes('activity log') || msg.includes('recent activity')) return "To view recent activity logs, click the 'Show Recent Activity Log' button in the dashboard section.";
+    if (msg.includes('language') || msg.includes('hindi')) return "You can switch the portal language using the 'English' button in the top navigation bar.";
+    if (msg.includes('dashboard') || msg.includes('analytics') || msg.includes('reports')) return "Reports & Dashboards visualize risk scores, completion rates, and anomalies for faster decision-making.";
+    if (msg.includes('visitor') || msg.includes('movement')) return "Movement & Visitor Control logs vehicle entry, staff, and visitor movement with pre-entry checks.";
+    if (msg.includes('inspections') || msg.includes('capa')) return "Inspections & CAPA records help track corrective and preventive actions for accountability.";
+    if (msg.includes('features')) return "Our portal offers farm registry, biosecurity checklists, health logs, movement control, inspections, and dashboards.";
+    if (msg.includes('login')) return "Use your username and password to login. If you have trouble, contact admin.";
+    if (msg.includes('forgot')) return "Please contact the admin to reset your password.";
+    if (msg.includes('contact')) return "You can reach us at support@digitalfarm.gov.in or call +91-9876543210.";
+    if (msg.includes('help')) return "I can help you navigate the portal, register farms, check biosecurity, report pig events, and more.";
+    return "Sorry, I didn't understand. Please rephrase or contact support@digitalfarm.gov.in.";
+}
+
+chatForm.onsubmit = function(e) {
+    e.preventDefault();
+    const userMsg = chatInput.value.trim();
+    if (!userMsg) return;
+    appendMessage(userMsg, 'user');
+    setTimeout(() => {
+        appendMessage(botReply(userMsg), 'bot');
+    }, 500);
+    chatInput.value = '';
+};
+
+// Activity Log JS
+const openLogBtn = document.getElementById('openLogBtn');
+const activityLogPanel = document.getElementById('activityLogPanel');
+const activityLogList = document.getElementById('activityLogList');
+
+openLogBtn.onclick = function() {
+    activityLogPanel.style.display = 'flex';
+    renderActivityLog();
+};
+
+function addActivityLog(msg) {
+    let logs = JSON.parse(localStorage.getItem('activityLogs')) || [];
+    logs.unshift({msg, time: new Date().toLocaleString()});
+    if (logs.length > 50) logs = logs.slice(0, 50); // keep last 50
+    localStorage.setItem('activityLogs', JSON.stringify(logs));
+    renderRecentActivityLog();
+    renderActivityLog();
+    // Also trigger storage event manually for same-tab update
+    window.dispatchEvent(new StorageEvent('storage', { key: 'activityLogs' }));
+}
+
+function renderActivityLog() {
+    let logs = JSON.parse(localStorage.getItem('activityLogs')) || [];
+    activityLogList.innerHTML = logs.length === 0 ? '<div style="color:#888;">No activity yet.</div>' :
+        logs.map(l => `<div style='margin-bottom:10px;'><span style='color:#258543;font-weight:bold;'>[${l.time}]</span> <span>${l.msg}</span></div>`).join('');
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+// Load CSV data for prediction
+let diseaseData = [];
+Papa.parse('syn.csv', {
+    download: true,
+    header: true,
+    complete: function(results) {
+        diseaseData = results.data;
+    }
+});
+
+// Predict disease using nearest neighbor from CSV
+document.getElementById('healthPredictForm').onsubmit = function(e) {
+    e.preventDefault();
+    // Collect values
+    const vals = {
+        age: Number(document.getElementById('hp_age').value),
+        weight: Number(document.getElementById('hp_weight').value),
+        feed_type: document.getElementById('hp_feed_type').value,
+        vaccination_status: document.getElementById('hp_vaccination_status').value,
+        farm_size: Number(document.getElementById('hp_farm_size').value),
+        hygiene_score: Number(document.getElementById('hp_hygiene_score').value),
+        temperature: Number(document.getElementById('hp_temperature').value),
+        humidity: Number(document.getElementById('hp_humidity').value),
+        coughing: document.getElementById('hp_coughing').value,
+        diarrhea: document.getElementById('hp_diarrhea').value,
+        lethargy: document.getElementById('hp_lethargy').value,
+        fever: document.getElementById('hp_fever').value,
+        skin_lesions: document.getElementById('hp_skin_lesions').value,
+        reproductive_failure: document.getElementById('hp_reproductive_failure').value,
+        neurological_signs: document.getElementById('hp_neurological_signs').value,
+        vomiting: document.getElementById('hp_vomiting').value
+    };
+
+    // Find nearest match in CSV (simple Euclidean for numeric, exact for categorical)
+    let bestMatch = null, minDist = Infinity;
+    for (const row of diseaseData) {
+        let dist = 0;
+        dist += Math.abs(vals.age - Number(row.age));
+        dist += Math.abs(vals.weight - Number(row.weight));
+        dist += Math.abs(vals.farm_size - Number(row.farm_size));
+        dist += Math.abs(vals.hygiene_score - Number(row.hygiene_score));
+        dist += Math.abs(vals.temperature - Number(row.temperature));
+        dist += Math.abs(vals.humidity - Number(row.humidity));
+        dist += (vals.feed_type !== row.feed_type ? 2 : 0);
+        dist += (vals.vaccination_status !== row.vaccination_status ? 2 : 0);
+        dist += (vals.coughing !== row.coughing ? 1 : 0);
+        dist += (vals.diarrhea !== row.diarrhea ? 1 : 0);
+        dist += (vals.lethargy !== row.lethargy ? 1 : 0);
+        dist += (vals.fever !== row.fever ? 1 : 0);
+        dist += (vals.skin_lesions !== row.skin_lesions ? 1 : 0);
+        dist += (vals.reproductive_failure !== row.reproductive_failure ? 1 : 0);
+        dist += (vals.neurological_signs !== row.neurological_signs ? 1 : 0);
+        dist += (vals.vomiting !== row.vomiting ? 1 : 0);
+        if (dist < minDist) {
+            minDist = dist;
+            bestMatch = row;
+        }
+    }
+    let result = bestMatch ? bestMatch.disease_label : "Healthy";
+    document.getElementById('healthPredictResult').textContent = "Prediction: " + result;
+};
+           // Show QR modal
+            document.getElementById('qrFarmBtn').onclick = function() {
+                // Populate farm select
+               
+                let farms = JSON.parse(localStorage.getItem("farms")) || [];
+                const select = document.getElementById('qrFarmSelect');
+                select.innerHTML = '<option value="">Select Farm</option>' +
+                    farms.map((f,i) => `<option value="${i}">${f.farmName}</option>`).join('');
+                document.getElementById('qrFarmInfo').innerHTML = '';
+                document.getElementById('qrFarmCode').innerHTML = '';
+                document.getElementById('qrFarmModal').style.display = 'flex';
+            };
+            // Close modal function
+            function closeModal(id) {
+                document.getElementById(id).style.display = 'none';
+            }
+            // When farm is selected, show info and QR
+            document.getElementById('qrFarmSelect').onchange = function() {
+                let farms = JSON.parse(localStorage.getItem("farms")) || [];
+                const idx = this.value;
+                if (idx === "") {
+                    document.getElementById('qrFarmInfo').innerHTML = '';
+                    document.getElementById('qrFarmCode').innerHTML = '';
+                    return;
+                }
+                const f = farms[idx];
+                // Prepare info (exclude password)
+                let info = {
+                    farmName: f.farmName,
+                    inchargeName: f.inchargeName,
+                    address: f.address,
+                    animalCount: f.animalCount,
+                    animalDetails: f.animalDetails,
+                    createdAt: f.createdAt,
+                    username: f.username
+                };
+                let infoHtml = Object.entries(info).map(([k,v]) => `<b>${k.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase())}:</b> ${v}<br>`).join('');
+                document.getElementById('qrFarmInfo').innerHTML = infoHtml;
+                // Generate QR code
+                let qr = new QRious({
+                    element: document.createElement('canvas'),
+                    value: JSON.stringify(info),
+                    size: 200
+                });
+                document.getElementById('qrFarmCode').innerHTML = '';
+                document.getElementById('qrFarmCode').appendChild(qr.element);
+            };
+          
+</script>
+<!-- Place this after your health prediction modal and form -->
+</html>

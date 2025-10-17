@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Biosecurity Checklist — Submit</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f8f9fa;
+      color: #333;
+    }
+    header {
+      background: #00695c;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+    }
+    header h1 { margin: 0; font-size: 22px; }
+    header p { margin: 5px 0 0; font-size: 14px; }
+    .container {
+      max-width: 800px;
+      margin: 30px auto;
+      background: #fff;
+      padding: 25px 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+    h2 {
+      font-size: 18px;
+      margin: 20px 0 10px;
+      color: #00695c;
+      border-bottom: 2px solid #e9ecef;
+      padding-bottom: 5px;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+    }
+    input[type=text], textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    .checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .checklist label {
+      font-weight: normal;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fdfdfd;
+      cursor: pointer;
+    }
+    .checklist input[type=checkbox] {
+      transform: scale(1.2);
+    }
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-start;
+      align-items: center;
+    }
+    button {
+      background: #00695c;
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      font-size: 15px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #e9ecef;
+      color: #333;
+    }
+    .note {
+      font-size: 13px;
+      color: #777;
+    }
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: #00695c;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 6px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Biosecurity Compliance Checklist</h1>
+    <p>Ensuring Hygiene & PPE Standards</p>
+  </header>
+
+  <div class="container">
+    <form id="checklistForm">
+      <label>Site / Location</label>
+      <input name="site_name" type="text" placeholder="e.g. Poultry Unit 2">
+
+      <label>Operator / Inspector Name *</label>
+      <input name="operator_name" type="text" required placeholder="Enter your name">
+
+      <h2>General Hygiene</h2>
+      <div class="checklist">
+        <label><input type="checkbox" name="general_hygiene[]" value="hands_washed"> Hands washed before/after</label>
+        <label><input type="checkbox" name="general_hygiene[]" value="footbath_used"> Footbath disinfectant used</label>
+        <label><input type="checkbox" name="general_hygiene[]" value="no_jewelry"> No jewelry/personal items</label>
+      </div>
+
+      <h2>PPE</h2>
+      <div class="checklist">
+        <label><input type="checkbox" name="ppe[]" value="gloves_worn"> Gloves worn</label>
+        <label><input type="checkbox" name="ppe[]" value="mask_worn"> Mask worn</label>
+        <label><input type="checkbox" name="ppe[]" value="coverall"> Gown / Coverall</label>
+        <label><input type="checkbox" name="ppe[]" value="boots_clean"> Boots sanitized</label>
+      </div>
+
+      <h2>Entry / Exit</h2>
+      <div class="checklist">
+        <label><input type="checkbox" name="entry_exit[]" value="log_signed"> Entry/Exit log signed</label>
+        <label><input type="checkbox" name="entry_exit[]" value="site_clothing"> Site-only clothing used</label>
+      </div>
+
+      <h2>Cleaning & Disinfection</h2>
+      <div class="checklist">
+        <label><input type="checkbox" name="cleaning[]" value="daily_cleaning"> Daily cleaning completed</label>
+        <label><input type="checkbox" name="cleaning[]" value="approved_disinfectant"> Approved disinfectant used</label>
+        <label><input type="checkbox" name="cleaning[]" value="tools_sanitized"> Tools sanitized</label>
+      </div>
+
+      <h2>Waste Management</h2>
+      <div class="checklist">
+        <label><input type="checkbox" name="waste_management[]" value="ppe_disposed"> Contaminated PPE disposed</label>
+        <label><input type="checkbox" name="waste_management[]" value="biohazard_bins"> Biohazard bins used & labeled</label>
+      </div>
+
+      <h2>Monitoring & Compliance</h2>
+      <div class="checklist">
+        <label><input type="checkbox" name="monitoring[]" value="supervisor_signoff"> Supervisor sign-off</label>
+        <label><input type="checkbox" name="monitoring[]" value="noncompliance_reported"> Non-compliance reported</label>
+      </div>
+
+      <label>Notes (Optional)</label>
+      <textarea name="notes" rows="3" placeholder="Observations, corrective actions, etc."></textarea>
+
+      <div class="actions">
+        <button type="submit">Submit</button>
+        <button type="reset" class="secondary">Reset</button>
+        <span class="note">Data will be stored in the central database.</span>
+      </div>
+    </form>
+
+    <div id="responseToast" class="toast"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('checklistForm');
+    const toast = document.getElementById('responseToast');
+
+    function showToast(msg, ok=true) {
+      toast.style.display='block';
+      toast.style.background = ok ? '#00695c' : '#a00';
+      toast.textContent = msg;
+      setTimeout(()=> toast.style.display='none', 3000);
+    }
+
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    const payload = {};
+    let score = 0;
+    let total = 0;
+
+    // Count checked items for score
+    ['general_hygiene','ppe','entry_exit','cleaning','waste_management','monitoring'].forEach(section => {
+      const vals = data.getAll(section+'[]');
+      score += vals.length;
+      total += document.querySelectorAll(`[name="${section}[]"]`).length;
+      payload[section] = vals;
+    });
+
+    // Add other fields
+    payload.site_name = data.get('site_name');
+    payload.operator_name = data.get('operator_name');
+    payload.notes = data.get('notes');
+    payload.score = score;
+    payload.total = total;
+
+    // Save to localStorage
+    let reports = JSON.parse(localStorage.getItem('reports')) || [];
+    const newReport = { id: Date.now(), ...payload };
+    reports.push(newReport);
+    localStorage.setItem('reports', JSON.stringify(reports));
+
+    showToast('✅ Report saved locally (ID: '+newReport.id+')', true);
+    form.reset();
+
+    // If score < 8, trigger backend email
+    if(score < 8) {
+      fetch('http://localhost:5000/send-alert', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          site: payload.site_name,
+          operator: payload.operator_name,
+          score: score,
+          total: total,
+          notes: payload.notes
+        })
+      })
+      .then(res => res.text())
+      .then(msg => showToast(msg, true))
+      .catch(err => showToast('Email alert failed', false));
+    }
+  });
+  </script>
+</body>
+</html>

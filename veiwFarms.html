@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>View Farms - Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f8f9fa;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #258543;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background: #258543;
+      color: #fff;
+    }
+    tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+    .back-btn {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 10px 20px;
+      background: #258543;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .back-btn:hover {
+      background: #1a492d;
+    }
+  </style>
+</head>
+<body>
+  <h1>All Farms</h1>
+  <button class="back-btn" onclick="window.location.href='index.html'">⬅ Back to Portal</button>
+  <table id="farmsTable">
+    <thead>
+      <tr>
+        <th>Farm Name</th>
+        <th>Animals</th>
+        <th>Details</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    function loadFarms() {
+      const farms = JSON.parse(localStorage.getItem("farms")) || [];
+      const tbody = document.querySelector("#farmsTable tbody");
+      tbody.innerHTML = "";
+
+      if (farms.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center;'>No farms added yet.</td></tr>";
+        return;
+      }
+
+      farms.forEach(farm => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${farm.farmName}</td>
+          <td>${farm.animalCount}</td>
+          <td>${farm.farmInfo}</td>
+          <td>${farm.createdAt}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Load farms when page opens
+    window.onload = loadFarms;
+  </script>
+</body>
+</html>

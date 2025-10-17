@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Farm Health &amp; Vaccination Logs</title>
+  <style>
+    body { font-family: Arial; background: #f5f9ff; padding: 20px; }
+    h2 { color: #2c3e50; }
+    .container { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0px 2px 6px rgba(0,0,0,0.2); margin-bottom: 20px; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; }
+    button { margin-top: 10px; padding: 10px 15px; background: #27ae60; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #219150; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #27ae60; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <h2>🐖🐓 Health & Vaccination Logs</h2>
+
+  <!-- Form -->
+  <div class="container">
+    <h3>Add New Record</h3>
+    <label>Animal Type</label>
+    <select id="animalType">
+      <option value="Pig">Pig</option>
+      <option value="Poultry">Poultry</option>
+    </select>
+
+    <label>Date</label>
+    <input type="date" id="date">
+
+    <label>Health Status</label>
+    <textarea id="healthStatus" placeholder="Enter health status..."></textarea>
+
+    <label>Vaccination Given</label>
+    <input type="text" id="vaccination" placeholder="Enter vaccination name">
+
+    <label>Next Due Date</label>
+    <input type="date" id="nextDue">
+
+    <label for="farm_score"><b>Farm Score (1-5):</b></label>
+<div id="farmScoreBtns" style="margin-bottom:16px;">
+  <button type="button" onclick="setFarmScore(1)">1</button>
+  <button type="button" onclick="setFarmScore(2)">2</button>
+  <button type="button" onclick="setFarmScore(3)">3</button>
+  <button type="button" onclick="setFarmScore(4)">4</button>
+  <button type="button" onclick="setFarmScore(5)">5</button>
+  <input type="hidden" id="farm_score" value="">
+</div>
+
+    <button onclick="addLog()">Add Log</button>
+  </div>
+  <!-- Place this where you want the button (e.g., below your main heading) -->
+
+
+<!-- Modal for health input and prediction -->
+<div class="modal" id="healthPredictModal" style="display:none;position:fixed;z-index:9999;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+    <div class="modal-content" style="max-width:480px;margin:auto;background:#fff;padding:28px;border-radius:16px;box-shadow:0 8px 32px #0003;position:relative;">
+        <span class="close-btn" onclick="closeModal('healthPredictModal')" style="position:absolute;top:18px;right:18px;font-size:22px;cursor:pointer;color:#666;">&times;</span>
+        <h3>Animal Health Condition Prediction</h3>
+        <form id="healthPredictForm">
+            <input type="number" id="hp_age" placeholder="Age (months)" required>
+            <input type="number" id="hp_weight" placeholder="Weight (kg)" required>
+            <select id="hp_feed_type" required>
+                <option value="">Feed Type</option>
+                <option value="Commercial">Commercial</option>
+                <option value="Home-mix">Home-mix</option>
+            </select>
+            <select id="hp_vaccination_status" required>
+                <option value="">Vaccination Status</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <input type="number" id="hp_farm_size" placeholder="Farm Size" required>
+            <input type="number" id="hp_hygiene_score" placeholder="Hygiene Score (1-10)" required>
+            <input type="number" id="hp_temperature" placeholder="Temperature (°C)" required>
+            <input type="number" id="hp_humidity" placeholder="Humidity (%)" required>
+            <select id="hp_coughing" required>
+                <option value="">Coughing?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_diarrhea" required>
+                <option value="">Diarrhea?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_lethargy" required>
+                <option value="">Lethargy?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_fever" required>
+                <option value="">Fever?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_skin_lesions" required>
+                <option value="">Skin Lesions?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_reproductive_failure" required>
+                <option value="">Reproductive Failure?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_neurological_signs" required>
+                <option value="">Neurological Signs?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_vomiting" required>
+                <option value="">Vomiting?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <button type="submit" style="background:#258543;color:#fff;padding:10px 18px;border:none;border-radius:8px;cursor:pointer;font-size:1em;margin-top:10px;">Predict Disease</button>
+        </form>
+        <div id="healthPredictResult" style="margin-top:18px;font-size:1.1em;color:#2563eb;"></div>
+    </div>
+</div>
+
+<script>
+// Show modal on button click
+document.getElementById('predictDiseaseBtn').onclick = function() {
+    document.getElementById('healthPredictModal').style.display = 'flex';
+};
+// Close modal function
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+
+// Disease prediction logic (simple demo using rules, for real AI use backend API)
+document.getElementById('healthPredictForm').onsubmit = function(e) {
+    e.preventDefault();
+    // Collect values
+    const vals = {
+        age: Number(document.getElementById('hp_age').value),
+        weight: Number(document.getElementById('hp_weight').value),
+        feed_type: document.getElementById('hp_feed_type').value,
+        vaccination_status: document.getElementById('hp_vaccination_status').value,
+        farm_size: Number(document.getElementById('hp_farm_size').value),
+        hygiene_score: Number(document.getElementById('hp_hygiene_score').value),
+        temperature: Number(document.getElementById('hp_temperature').value),
+        humidity: Number(document.getElementById('hp_humidity').value),
+        coughing: document.getElementById('hp_coughing').value,
+        diarrhea: document.getElementById('hp_diarrhea').value,
+        lethargy: document.getElementById('hp_lethargy').value,
+        fever: document.getElementById('hp_fever').value,
+        skin_lesions: document.getElementById('hp_skin_lesions').value,
+        reproductive_failure: document.getElementById('hp_reproductive_failure').value,
+        neurological_signs: document.getElementById('hp_neurological_signs').value,
+        vomiting: document.getElementById('hp_vomiting').value
+    };
+
+    // Simple rule-based prediction (replace with API call for real ML)
+    let result = "Healthy";
+    if (vals.fever === "Yes" && vals.lethargy === "Yes" && vals.coughing === "Yes") result = "Possible PMWS";
+    else if (vals.fever === "Yes" && vals.vomiting === "Yes" && vals.skin_lesions === "Yes") result = "Possible ASF";
+    else if (vals.diarrhea === "Yes" && vals.vomiting === "Yes") result = "Possible Salmonellosis";
+    else if (vals.fever === "Yes" && vals.neurological_signs === "Yes") result = "Possible CSF";
+    else if (vals.skin_lesions === "Yes" && vals.reproductive_failure === "Yes") result = "Possible Erysipelas";
+
+    document.getElementById('healthPredictResult').textContent = "Prediction: " + result;
+};
+</script>
+
+  <!-- Table -->
+  <div class="container">
+    <h3>Logs History</h3>
+    <table id="logTable">
+      <thead>
+        <tr>
+          <th>Animal</th>
+          <th>Date</th>
+          <th>Health Status</th>
+          <th>Vaccination</th>
+          <th>Next Due</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    let logs = [];
+
+    function addLog() {
+      const animal = document.getElementById("animalType").value;
+      const date = document.getElementById("date").value;
+      const health = document.getElementById("healthStatus").value;
+      const vaccine = document.getElementById("vaccination").value;
+      const nextDue = document.getElementById("nextDue").value;
+      const farmScore = Number(document.getElementById("farm_score").value);
+
+      if (!date || !health || !vaccine) {
+        alert("Please fill all required fields!");
+        return;
+      }
+      if (!farmScore) {
+        alert("Please select a Farm Score (1-5)!");
+        return;
+      }
+
+      const log = { animal, date, health, vaccine, nextDue, farmScore };
+      logs.push(log);
+      renderTable();
+      clearForm();
+
+      // If farm score < 3, send alert email
+      if (farmScore < 3) {
+        fetch('http://localhost:5000/send-alert', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            animal, date, health, vaccine, nextDue, farmScore
+          })
+        })
+        .then(res => res.text())
+        .then(msg => alert(msg))
+        .catch(err => alert('Email alert failed'));
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector("#logTable tbody");
+      tbody.innerHTML = "";
+
+      logs.forEach((log, index) => {
+        const row = `<tr>
+          <td>${log.animal}</td>
+          <td>${log.date}</td>
+          <td>${log.health}</td>
+          <td>${log.vaccine}</td>
+          <td>${log.nextDue}</td>
+          <td><button style="background:red" onclick="deleteLog(${index})">Delete</button></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    function deleteLog(index) {
+      logs.splice(index, 1);
+      renderTable();
+    }
+
+    function clearForm() {
+      document.getElementById("date").value = "";
+      document.getElementById("healthStatus").value = "";
+      document.getElementById("vaccination").value = "";
+      document.getElementById("nextDue").value = "";
+      document.getElementById("farm_score").value = "";
+      Array.from(document.querySelectorAll('#farmScoreBtns button')).forEach(btn => {
+        btn.style.background = '';
+        btn.style.color = '';
+      });
+    }
+  </script>
+<div style="text-align:center; margin:40px 0;">
+    <button id="predictDiseaseBtn" style="background:linear-gradient(90deg,#067a2b 60%,#00fdb1 100%);color:#fff;padding:16px 38px;border:none;border-radius:8px;font-size:1.2em;font-weight:600;box-shadow:0 0 18px #00c6fb88;cursor:pointer;transition:background 0.4s,box-shadow 0.4s,transform 0.2s;">
+        Predict Animal Health Condition
+    </button>
+</div>
+<script>
+function setFarmScore(val) {
+  document.getElementById('farm_score').value = val;
+  // Highlight selected button
+  Array.from(document.querySelectorAll('#farmScoreBtns button')).forEach((btn, i) => {
+    btn.style.background = (i+1) === val ? '#22c55e' : '';
+    btn.style.color = (i+1) === val ? '#fff' : '';
+  });
+}
+</script>
+</body>
+</html>

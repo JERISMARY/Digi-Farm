@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Farm Inspection & CAPA</title>
+  <style>
+    body { 
+      font-family: 'Segoe UI', sans-serif; 
+      background: linear-gradient(120deg, #00695c, #004d40); /* Government pig & poultry colors */
+      margin: 0; padding: 20px; 
+      color: #333;
+    }
+    h2 { 
+      text-align: center; 
+      font-size: 28px; 
+      margin-bottom: 20px; 
+      color: #ffffff;
+      letter-spacing: 1px;
+    }
+    .container { 
+      background: #f0f4f4; /* Official light form color */
+      padding: 25px; 
+      border-radius: 10px; 
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.2); 
+      margin: 20px auto; 
+      max-width: 1000px;
+    }
+    h3 { 
+      margin-bottom: 15px; 
+      color: #004d40;
+      border-left: 6px solid #00796b;
+      padding-left: 10px;
+    }
+    label { font-weight: bold; display: block; margin-top: 10px; }
+    input, select, textarea { 
+      margin: 6px 0; padding: 10px; 
+      border: 1px solid #00796b; border-radius: 6px; 
+      width: 100%; font-size: 15px;
+      background: #ffffff;
+    }
+    button { 
+      margin-top: 15px; 
+      padding: 12px 18px; 
+      background: #00796b; /* Government green button */
+      color: #fff; 
+      border: none; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-size: 15px; 
+      transition: background 0.3s, transform 0.2s; 
+    }
+    button:hover { 
+      background: #004d40; 
+      transform: scale(1.02); 
+    }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 20px; 
+      font-size: 14px; 
+    }
+    th, td { 
+      border: 1px solid #ddd; 
+      padding: 10px; 
+      text-align: center; 
+    }
+    th { 
+      background: #00796b; 
+      color: #fff; 
+      font-size: 15px;
+    }
+    tr:nth-child(even) { background: #f9f9f9; }
+    tr:hover { background: #e0f2f1; }
+    .delete-btn {
+      background: #c62828;
+      padding: 6px 12px;
+      border-radius: 5px;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.3s;
+    }
+    .delete-btn:hover { background: #b71c1c; }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      max-width: 480px;
+      margin: auto;
+      background: #fff;
+      padding: 28px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px #0003;
+      position: relative;
+    }
+    .close-btn {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      font-size: 22px;
+      cursor: pointer;
+      color: #666;
+    }
+
+    /* Two-column grid for predictive model form */
+    #healthPredictForm {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px 18px;
+      align-items: center;
+    }
+    #healthPredictForm button[type="submit"] {
+      grid-column: 1 / -1;
+      margin-top: 10px;
+    }
+    #healthPredictForm #healthPredictResult {
+      grid-column: 1 / -1;
+    }
+    @media (max-width: 600px) {
+      #healthPredictForm {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Government Pig & Poultry Farm Inspection & CAPA</h2>
+
+  <!-- Inspection & CAPA Form -->
+  <div class="container">
+    <h3>Record Inspection & CAPA</h3>
+
+    <label>Farm Type</label>
+    <select id="farmType">
+      <option value="Pig">Pig</option>
+      <option value="Poultry">Poultry</option>
+    </select>
+
+    <label>Inspector Name</label>
+    <input type="text" id="inspectorName" placeholder="Enter inspector name">
+
+    <label>Inspection Date & Time</label>
+    <input type="datetime-local" id="inspectionDate">
+
+    <label>Observation / Issue</label>
+    <textarea id="observation" placeholder="Describe the issue or observation"></textarea>
+
+    <label>CAPA Action Taken</label>
+    <textarea id="capaAction" placeholder="Describe the corrective/preventive action"></textarea>
+
+    <label>Follow-up Date</label>
+    <input type="date" id="followUpDate">
+
+    <button onclick="addInspection()">Save Record</button>
+  </div>
+
+  <!-- Records Table -->
+  <div class="container">
+    <h3>Inspection & CAPA Records</h3>
+    <table id="inspectionTable">
+      <thead>
+        <tr>
+          <th>Farm</th>
+          <th>Inspector</th>
+          <th>Inspection Date</th>
+          <th>Observation / Issue</th>
+          <th>CAPA Action</th>
+          <th>Follow-up Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Predict Animal Health Condition Button -->
+  <div style="text-align:center; margin:40px 0;">
+    <button id="predictDiseaseBtn" style="background:linear-gradient(90deg,#0078d7 60%,#00c6fb 100%);color:#fff;padding:16px 38px;border:none;border-radius:8px;font-size:1.2em;font-weight:600;box-shadow:0 0 18px #00c6fb88;cursor:pointer;transition:background 0.4s,box-shadow 0.4s,transform 0.2s;">
+        Predict Animal Health Condition
+    </button>
+  </div>
+
+  <!-- Modal for health input and prediction -->
+  <div class="modal" id="healthPredictModal" style="display:none;position:fixed;z-index:9999;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+    <div class="modal-content" style="max-width:480px;margin:auto;background:#fff;padding:28px;border-radius:16px;box-shadow:0 8px 32px #0003;position:relative;">
+        <span class="close-btn" onclick="closeModal('healthPredictModal')" style="position:absolute;top:18px;right:18px;font-size:22px;cursor:pointer;color:#666;">&times;</span>
+        <h3>Animal Health Condition Prediction</h3>
+        <form id="healthPredictForm">
+            <input type="number" id="hp_age" placeholder="Age (months)" required>
+            <input type="number" id="hp_weight" placeholder="Weight (kg)" required>
+            <select id="hp_feed_type" required>
+                <option value="">Feed Type</option>
+                <option value="Commercial">Commercial</option>
+                <option value="Home-mix">Home-mix</option>
+            </select>
+            <select id="hp_vaccination_status" required>
+                <option value="">Vaccination Status</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <input type="number" id="hp_farm_size" placeholder="Farm Size" required>
+            <input type="number" id="hp_hygiene_score" placeholder="Hygiene Score (1-10)" required>
+            <input type="number" id="hp_temperature" placeholder="Temperature (°C)" required>
+            <input type="number" id="hp_humidity" placeholder="Humidity (%)" required>
+            <select id="hp_coughing" required>
+                <option value="">Coughing?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_diarrhea" required>
+                <option value="">Diarrhea?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_lethargy" required>
+                <option value="">Lethargy?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_fever" required>
+                <option value="">Fever?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_skin_lesions" required>
+                <option value="">Skin Lesions?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_reproductive_failure" required>
+                <option value="">Reproductive Failure?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_neurological_signs" required>
+                <option value="">Neurological Signs?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <select id="hp_vomiting" required>
+                <option value="">Vomiting?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+            <button type="submit" style="background:#258543;color:#fff;padding:10px 18px;border:none;border-radius:8px;cursor:pointer;font-size:1em;margin-top:10px;">Predict Disease</button>
+        </form>
+        <div id="healthPredictResult" style="margin-top:18px;font-size:1.1em;color:#2563eb;"></div>
+    </div>
+  </div>
+
+  <script>
+    let inspectionLogs = [];
+
+    function addInspection() {
+      const farm = document.getElementById("farmType").value;
+      const inspector = document.getElementById("inspectorName").value;
+      const date = document.getElementById("inspectionDate").value;
+      const observation = document.getElementById("observation").value;
+      const capa = document.getElementById("capaAction").value;
+      const followUp = document.getElementById("followUpDate").value;
+
+      if (!inspector || !date || !observation) {
+        alert("Please fill in required fields (Inspector, Inspection Date, Observation)");
+        return;
+      }
+
+      const record = { farm, inspector, date, observation, capa, followUp };
+      inspectionLogs.push(record);
+      renderInspections();
+      clearForm();
+
+      // Send email to admin with all inspection details
+      fetch('http://localhost:5000/send-alert', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          inspection: true,
+          farm, inspector, date, observation, capa, followUp
+        })
+      })
+      .then(res => res.text())
+      .then(msg => alert(msg))
+      .catch(err => alert('Email alert failed'));
+    }
+
+    function renderInspections() {
+      const tbody = document.querySelector("#inspectionTable tbody");
+      tbody.innerHTML = "";
+
+      inspectionLogs.forEach((log, index) => {
+        const row = `<tr>
+          <td>${log.farm}</td>
+          <td>${log.inspector}</td>
+          <td>${log.date}</td>
+          <td>${log.observation}</td>
+          <td>${log.capa}</td>
+          <td>${log.followUp}</td>
+          <td><button class="delete-btn" onclick="deleteInspection(${index})">Delete</button></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    function deleteInspection(index) {
+      inspectionLogs.splice(index, 1);
+      renderInspections();
+    }
+
+    function clearForm() {
+      document.getElementById("inspectorName").value = "";
+      document.getElementById("inspectionDate").value = "";
+      document.getElementById("observation").value = "";
+      document.getElementById("capaAction").value = "";
+      document.getElementById("followUpDate").value = "";
+    }
+
+    // Show modal on button click
+    document.getElementById('predictDiseaseBtn').onclick = function() {
+        document.getElementById('healthPredictModal').style.display = 'flex';
+    };
+    // Close modal function
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    // Disease prediction logic (simple demo using rules, for real AI use backend API)
+    document.getElementById('healthPredictForm').onsubmit = function(e) {
+        e.preventDefault();
+        // Collect values
+        const vals = {
+            age: Number(document.getElementById('hp_age').value),
+            weight: Number(document.getElementById('hp_weight').value),
+            feed_type: document.getElementById('hp_feed_type').value,
+            vaccination_status: document.getElementById('hp_vaccination_status').value,
+            farm_size: Number(document.getElementById('hp_farm_size').value),
+            hygiene_score: Number(document.getElementById('hp_hygiene_score').value),
+            temperature: Number(document.getElementById('hp_temperature').value),
+            humidity: Number(document.getElementById('hp_humidity').value),
+            coughing: document.getElementById('hp_coughing').value,
+            diarrhea: document.getElementById('hp_diarrhea').value,
+            lethargy: document.getElementById('hp_lethargy').value,
+            fever: document.getElementById('hp_fever').value,
+            skin_lesions: document.getElementById('hp_skin_lesions').value,
+            reproductive_failure: document.getElementById('hp_reproductive_failure').value,
+            neurological_signs: document.getElementById('hp_neurological_signs').value,
+            vomiting: document.getElementById('hp_vomiting').value
+        };
+
+        // Simple rule-based prediction (replace with API call for real ML)
+        let result = "Healthy";
+        if (vals.fever === "Yes" && vals.lethargy === "Yes" && vals.coughing === "Yes") result = "Possible PMWS";
+        else if (vals.fever === "Yes" && vals.vomiting === "Yes" && vals.skin_lesions === "Yes") result = "Possible ASF";
+        else if (vals.diarrhea === "Yes" && vals.vomiting === "Yes") result = "Possible Salmonellosis";
+        else if (vals.fever === "Yes" && vals.neurological_signs === "Yes") result = "Possible CSF";
+        else if (vals.skin_lesions === "Yes" && vals.reproductive_failure === "Yes") result = "Possible Erysipelas";
+
+        document.getElementById('healthPredictResult').textContent = "Prediction: " + result;
+    };
+  </script>
+
+</body>
+</html>

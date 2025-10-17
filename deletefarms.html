@@ -1,0 +1,409 @@
+  <script>
+  // DEMO DATA INJECTOR: Only runs if no data exists
+  document.addEventListener('DOMContentLoaded', function() {
+    if (!localStorage.getItem('farms')) {
+      const demoFarms = [
+        { farmName: 'Green Valley', inchargeName: 'Amit Kumar', address: 'Ranchi, Jharkhand', animalCount: 120, animalDetails: 'Pigs: 80\nPoultry: 40', createdAt: '2025-09-01 10:00', username: 'greenvalley', password: 'greenvalley123' },
+        { farmName: 'Sunrise Farm', inchargeName: 'Priya Singh', address: 'Jamshedpur, Jharkhand', animalCount: 90, animalDetails: 'Pigs: 50\nPoultry: 40', createdAt: '2025-09-03 14:30', username: 'sunrisefarm', password: 'sunrise2025' },
+        { farmName: 'Blue River', inchargeName: 'Rahul Das', address: 'Dhanbad, Jharkhand', animalCount: 60, animalDetails: 'Pigs: 60', createdAt: '2025-09-05 09:15', username: 'blueriver', password: 'blueriver2025' }
+      ];
+      localStorage.setItem('farms', JSON.stringify(demoFarms));
+    }
+    if (!localStorage.getItem('activityLogs')) {
+      const demoLogs = [
+        { msg: 'Farm <b>Green Valley</b> registered by admin at 2025-09-01 10:00', time: '2025-09-01 10:01' },
+        { msg: 'Farm <b>Sunrise Farm</b> registered by admin at 2025-09-03 14:30', time: '2025-09-03 14:31' },
+        { msg: 'Farm <b>Blue River</b> registered by admin at 2025-09-05 09:15', time: '2025-09-05 09:16' }
+      ];
+      localStorage.setItem('activityLogs', JSON.stringify(demoLogs));
+    }
+  });
+  </script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>View Farms - Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f8f9fa;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #258543;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background: #258543;
+      color: #fff;
+    }
+    tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+    tr:hover {
+      background: #e7f9ea !important;
+      cursor: pointer;
+    }
+    .action-btn {
+      background: #258543;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      margin-right: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .action-btn:hover {
+      background: #1a492d;
+    }
+    .back-btn {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 10px 20px;
+      background: #258543;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .back-btn:hover {
+      background: #1a492d;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>All Farms</h1>
+  <button class="back-btn" onclick="window.location.href='ind.html'">⬅ Back to Portal</button>
+  <div style="margin:18px 0;display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+    <input id="farmSearch" type="text" placeholder="Search by name, incharge, address..." style="padding:8px;border-radius:6px;border:1px solid #ccc;min-width:220px;">
+    <button class="action-btn" onclick="exportFarmsCSV()">Export CSV</button>
+    <button class="action-btn" onclick="copyTableToClipboard()">Copy Table</button>
+    <button class="action-btn" onclick="refreshFarms()">Refresh</button>
+    <button class="action-btn" onclick="clearAllFarms()" style="background:#b91c1c;">Clear All Farms</button>
+    <button class="action-btn" onclick="showLogModal()" style="background:#2563eb;">Show Activity Log</button>
+    <button onclick="undoDeleteFarm()" id="undoBtn" style="background:#b45309;color:#fff;padding:8px 16px;border:none;border-radius:6px;display:none;">Undo Delete</button>
+    <span id="totalFarms" style="margin-left:auto;font-weight:bold;color:#258543;"></span>
+  </div>
+  <!-- Activity Log Modal -->
+  <div id="logModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:2000;">
+    <div style="background:#fff;padding:28px 32px;border-radius:12px;max-width:520px;width:90%;position:relative;max-height:80vh;overflow-y:auto;">
+      <span onclick="closeLogModal()" style="position:absolute;top:10px;right:18px;font-size:22px;cursor:pointer;color:#b91c1c;">&times;</span>
+      <h2 style="color:#2563eb;margin-bottom:10px;">Activity Log</h2>
+      <div id="logList" style="color:#333;font-size:1.05em;"></div>
+    </div>
+  </div>
+
+  <table id="farmsTable">
+    <thead>
+      <tr>
+        <th>Farm Name</th>
+        <th>Animals</th>
+        <th>Details</th>
+        <th>Created At</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+  // Refresh farms table
+  function refreshFarms() {
+    loadFarms();
+  }
+
+  // Copy table to clipboard
+  function copyTableToClipboard() {
+    const table = document.getElementById('farmsTable');
+    let text = '';
+    for (let r of table.rows) {
+      let row = [];
+      for (let c of r.cells) row.push(c.innerText);
+      text += row.join('\t') + '\n';
+    }
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Table copied to clipboard!');
+    });
+  }
+
+  // Clear all farms
+  function clearAllFarms() {
+    if (confirm('Are you sure you want to delete ALL farms? This cannot be undone!')) {
+      localStorage.removeItem('farms');
+      loadFarms();
+      addActivityLog('All farms deleted by admin.');
+    }
+  }
+
+  // Activity Log Modal
+  function showLogModal() {
+    renderLogList();
+    document.getElementById('logModal').style.display = 'flex';
+  }
+  function closeLogModal() {
+    document.getElementById('logModal').style.display = 'none';
+  }
+  function renderLogList() {
+    let logs = JSON.parse(localStorage.getItem('activityLogs')) || [];
+    document.getElementById('logList').innerHTML = logs.length === 0 ? '<div style="color:#888;">No activity yet.</div>' :
+      logs.slice(0,30).map(l => `<div style='margin-bottom:8px;'><span style='color:#258543;font-weight:bold;'>[${l.time}]</span> <span>${l.msg}</span></div>`).join('');
+  }
+
+
+  function loadFarms() {
+    const farms = JSON.parse(localStorage.getItem("farms")) || [];
+    const tbody = document.querySelector("#farmsTable tbody");
+    const search = (document.getElementById('farmSearch')?.value || '').toLowerCase();
+    tbody.innerHTML = "";
+    document.getElementById('totalFarms').textContent = `Total Farms: ${farms.length}`;
+
+    let filtered = farms;
+    if (search) {
+      filtered = farms.filter(f =>
+        (f.farmName||'').toLowerCase().includes(search) ||
+        (f.inchargeName||'').toLowerCase().includes(search) ||
+        (f.address||'').toLowerCase().includes(search)
+      );
+    }
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No farms found.</td></tr>";
+      return;
+    }
+
+    filtered.forEach((farm, index) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><a href="#" style="color:#258543;text-decoration:underline;" onclick="showFarmDetails('${encodeURIComponent(farm.farmName)}')">${farm.farmName}</a></td>
+        <td>${farm.animalCount}</td>
+        <td>${farm.animalDetails || farm.farmInfo || ''}</td>
+        <td>${farm.createdAt}</td>
+        <td><button onclick="deleteFarmByName('${encodeURIComponent(farm.farmName)}')">❌ Delete</button></td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  // Delete farm by farmName (unique)
+  function deleteFarmByName(farmNameEnc) {
+    let farms = JSON.parse(localStorage.getItem("farms")) || [];
+    const farmName = decodeURIComponent(farmNameEnc);
+    const idx = farms.findIndex(f => f.farmName === farmName);
+    if (idx === -1) return;
+    if (confirm(`Are you sure you want to delete "${farms[idx].farmName}"?`)) {
+      lastDeletedFarm = farms[idx];
+      lastDeletedIndex = idx;
+      farms.splice(idx, 1);
+      localStorage.setItem("farms", JSON.stringify(farms));
+      loadFarms();
+      document.getElementById('undoBtn').style.display = 'inline-block';
+      addActivityLog(`Farm <b>${farmName}</b> deleted by admin.`);
+    }
+  }
+
+  // Undo last delete
+  function undoDeleteFarm() {
+    if (lastDeletedFarm !== null && lastDeletedIndex !== null) {
+      let farms = JSON.parse(localStorage.getItem("farms")) || [];
+      farms.splice(lastDeletedIndex, 0, lastDeletedFarm);
+      localStorage.setItem("farms", JSON.stringify(farms));
+      loadFarms();
+      document.getElementById('undoBtn').style.display = 'none';
+      addActivityLog(`Farm <b>${lastDeletedFarm.farmName}</b> restored by admin.`);
+      lastDeletedFarm = null;
+      lastDeletedIndex = null;
+    }
+  }
+
+  // Export farms as CSV
+  function exportFarmsCSV() {
+    let farms = JSON.parse(localStorage.getItem("farms")) || [];
+    if (!farms.length) { alert('No farms to export.'); return; }
+    let csv = 'Farm Name,Incharge,Address,Animals,Details,Created At\n';
+    csv += farms.map(f => [f.farmName, f.inchargeName||'', f.address||'', f.animalCount||'', (f.animalDetails||f.farmInfo||'').replace(/\n/g,' '), f.createdAt||''].map(x => '"'+(x||'')+'"').join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'farms.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // Show farm details in modal
+  function showFarmDetails(farmNameEnc) {
+    let farms = JSON.parse(localStorage.getItem("farms")) || [];
+    const farmName = decodeURIComponent(farmNameEnc);
+    const farm = farms.find(f => f.farmName === farmName);
+    if (!farm) return;
+    document.getElementById('modalFarmName').textContent = farm.farmName;
+    document.getElementById('modalFarmInfo').innerHTML =
+      `<b>Incharge:</b> ${farm.inchargeName||'-'}<br>`+
+      `<b>Address:</b> ${farm.address||'-'}<br>`+
+      `<b>Animals:</b> ${farm.animalCount||'-'}<br>`+
+      `<b>Details:</b> ${(farm.animalDetails||farm.farmInfo||'-').replace(/\n/g,'<br>')}<br>`+
+      `<b>Created At:</b> ${farm.createdAt||'-'}`;
+    document.getElementById('farmDetailsModal').style.display = 'flex';
+  }
+  function closeFarmDetails() {
+    document.getElementById('farmDetailsModal').style.display = 'none';
+  }
+
+  // Activity log for deletions
+  function addActivityLog(msg) {
+    let logs = JSON.parse(localStorage.getItem('activityLogs')) || [];
+    logs.unshift({msg, time: new Date().toLocaleString()});
+    if (logs.length > 50) logs = logs.slice(0, 50);
+    localStorage.setItem('activityLogs', JSON.stringify(logs));
+  }
+
+  // Search/filter event
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('farmSearch').addEventListener('input', loadFarms);
+    loadFarms();
+  });
+  </script>
+
+  <!-- Farm Details Modal -->
+  <div id="farmDetailsModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1000;">
+    <div style="background:#fff;padding:28px 32px;border-radius:12px;max-width:420px;width:90%;position:relative;">
+      <span onclick="closeFarmDetails()" style="position:absolute;top:10px;right:18px;font-size:22px;cursor:pointer;color:#b91c1c;">&times;</span>
+      <h2 id="modalFarmName" style="color:#258543;margin-bottom:10px;"></h2>
+      <div id="modalFarmInfo" style="color:#333;font-size:1.05em;"></div>
+    </div>
+  </div>
+
+  <script>
+  // Store last deleted farm for undo
+
+
+  function loadFarms() {
+    const farms = JSON.parse(localStorage.getItem("farms")) || [];
+    const tbody = document.querySelector("#farmsTable tbody");
+    const search = (document.getElementById('farmSearch')?.value || '').toLowerCase();
+    tbody.innerHTML = "";
+    document.getElementById('totalFarms').textContent = `Total Farms: ${farms.length}`;
+
+    let filtered = farms;
+    if (search) {
+      filtered = farms.filter(f =>
+        (f.farmName||'').toLowerCase().includes(search) ||
+        (f.inchargeName||'').toLowerCase().includes(search) ||
+        (f.address||'').toLowerCase().includes(search)
+      );
+    }
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No farms found.</td></tr>";
+      return;
+    }
+
+    filtered.forEach((farm, index) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><a href="#" style="color:#258543;text-decoration:underline;" onclick="showFarmDetails('${encodeURIComponent(farm.farmName)}')">${farm.farmName}</a></td>
+        <td>${farm.animalCount}</td>
+        <td>${farm.animalDetails || farm.farmInfo || ''}</td>
+        <td>${farm.createdAt}</td>
+        <td><button onclick="deleteFarmByName('${encodeURIComponent(farm.farmName)}')">❌ Delete</button></td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  // Delete farm by farmName (unique)
+  function deleteFarmByName(farmNameEnc) {
+    let farms = JSON.parse(localStorage.getItem("farms")) || [];
+    const farmName = decodeURIComponent(farmNameEnc);
+    const idx = farms.findIndex(f => f.farmName === farmName);
+    if (idx === -1) return;
+    if (confirm(`Are you sure you want to delete "${farms[idx].farmName}"?`)) {
+      lastDeletedFarm = farms[idx];
+      lastDeletedIndex = idx;
+      farms.splice(idx, 1);
+      localStorage.setItem("farms", JSON.stringify(farms));
+      loadFarms();
+      document.getElementById('undoBtn').style.display = 'inline-block';
+      addActivityLog(`Farm <b>${farmName}</b> deleted by admin.`);
+    }
+  }
+
+  // Undo last delete
+  function undoDeleteFarm() {
+    if (lastDeletedFarm !== null && lastDeletedIndex !== null) {
+      let farms = JSON.parse(localStorage.getItem("farms")) || [];
+      farms.splice(lastDeletedIndex, 0, lastDeletedFarm);
+      localStorage.setItem("farms", JSON.stringify(farms));
+      loadFarms();
+      document.getElementById('undoBtn').style.display = 'none';
+      addActivityLog(`Farm <b>${lastDeletedFarm.farmName}</b> restored by admin.`);
+      lastDeletedFarm = null;
+      lastDeletedIndex = null;
+    }
+  }
+
+  // Export farms as CSV
+  function exportFarmsCSV() {
+    let farms = JSON.parse(localStorage.getItem("farms")) || [];
+    if (!farms.length) { alert('No farms to export.'); return; }
+    let csv = 'Farm Name,Incharge,Address,Animals,Details,Created At\n';
+    csv += farms.map(f => [f.farmName, f.inchargeName||'', f.address||'', f.animalCount||'', (f.animalDetails||f.farmInfo||'').replace(/\n/g,' '), f.createdAt||''].map(x => '"'+(x||'')+'"').join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'farms.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // Show farm details in modal
+  function showFarmDetails(farmNameEnc) {
+    let farms = JSON.parse(localStorage.getItem("farms")) || [];
+    const farmName = decodeURIComponent(farmNameEnc);
+    const farm = farms.find(f => f.farmName === farmName);
+    if (!farm) return;
+    document.getElementById('modalFarmName').textContent = farm.farmName;
+    document.getElementById('modalFarmInfo').innerHTML =
+      `<b>Incharge:</b> ${farm.inchargeName||'-'}<br>`+
+      `<b>Address:</b> ${farm.address||'-'}<br>`+
+      `<b>Animals:</b> ${farm.animalCount||'-'}<br>`+
+      `<b>Details:</b> ${(farm.animalDetails||farm.farmInfo||'-').replace(/\n/g,'<br>')}<br>`+
+      `<b>Created At:</b> ${farm.createdAt||'-'}`;
+    document.getElementById('farmDetailsModal').style.display = 'flex';
+  }
+  function closeFarmDetails() {
+    document.getElementById('farmDetailsModal').style.display = 'none';
+  }
+
+  // Activity log for deletions
+  function addActivityLog(msg) {
+    let logs = JSON.parse(localStorage.getItem('activityLogs')) || [];
+    logs.unshift({msg, time: new Date().toLocaleString()});
+    if (logs.length > 50) logs = logs.slice(0, 50);
+    localStorage.setItem('activityLogs', JSON.stringify(logs));
+  }
+
+  // Search/filter event
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('farmSearch').addEventListener('input', loadFarms);
+    loadFarms();
+  });
+  </script>
+</body>
+</html>

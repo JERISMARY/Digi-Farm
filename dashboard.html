@@ -1,0 +1,263 @@
+<script>
+// DEMO DATA INJECTOR: Only runs if no data exists
+document.addEventListener('DOMContentLoaded', function() {
+    if (!localStorage.getItem('poultryRecords')) {
+        const demoRecords = [
+            { farmName: 'Green Valley', birdCount: 40, batchDate: '2025-09-01', status: 'Active' },
+            { farmName: 'Sunrise Farm', birdCount: 30, batchDate: '2025-09-03', status: 'Sold' },
+            { farmName: 'Blue River', birdCount: 20, batchDate: '2025-09-05', status: 'Deceased' },
+            { farmName: 'Happy Acres', birdCount: 55, batchDate: '2025-09-06', status: 'Active' },
+            { farmName: 'Golden Fields', birdCount: 25, batchDate: '2025-09-07', status: 'Active' },
+            { farmName: 'Silver Lake', birdCount: 18, batchDate: '2025-09-08', status: 'Sold' },
+            { farmName: 'Red Barn', birdCount: 33, batchDate: '2025-09-09', status: 'Active' },
+            { farmName: 'Maple Grove', birdCount: 27, batchDate: '2025-09-10', status: 'Deceased' },
+            { farmName: 'Oakwood', birdCount: 44, batchDate: '2025-09-11', status: 'Active' },
+            { farmName: 'Riverbend', birdCount: 22, batchDate: '2025-09-12', status: 'Sold' },
+            { farmName: 'Sunnybrook', birdCount: 36, batchDate: '2025-09-13', status: 'Active' },
+            { farmName: 'Hilltop', birdCount: 29, batchDate: '2025-09-14', status: 'Active' },
+            { farmName: 'Cedar Point', birdCount: 31, batchDate: '2025-09-15', status: 'Deceased' },
+            { farmName: 'Willow Creek', birdCount: 24, batchDate: '2025-09-16', status: 'Sold' },
+            { farmName: 'Pine Ridge', birdCount: 38, batchDate: '2025-09-17', status: 'Active' }
+        ];
+        localStorage.setItem('poultryRecords', JSON.stringify(demoRecords));
+    }
+    if (!localStorage.getItem('poultryActivityLogs')) {
+        const demoLogs = [
+            { msg: 'Record for <b>Green Valley</b> (40 pig and other poultry) added as <b>Active</b>.', time: '2025-09-01 10:10' },
+            { msg: 'Record for <b>Sunrise Farm</b> (30 pig and other poultry) added as <b>Sold</b>.', time: '2025-09-03 14:40' },
+            { msg: 'Record for <b>Blue River</b> (20 pig and other poultry) added as <b>Deceased</b>.', time: '2025-09-05 09:25' },
+            { msg: 'Record for <b>Happy Acres</b> (55 pig and other poultry) added as <b>Active</b>.', time: '2025-09-06 11:00' },
+            { msg: 'Record for <b>Golden Fields</b> (25 pig and other poultry) added as <b>Active</b>.', time: '2025-09-07 12:15' },
+            { msg: 'Record for <b>Silver Lake</b> (18 pig and other poultry) added as <b>Sold</b>.', time: '2025-09-08 09:45' },
+            { msg: 'Record for <b>Red Barn</b> (33 pig and other poultry) added as <b>Active</b>.', time: '2025-09-09 13:20' },
+            { msg: 'Record for <b>Maple Grove</b> (27 pig and other poultry) added as <b>Deceased</b>.', time: '2025-09-10 10:30' },
+            { msg: 'Record for <b>Oakwood</b> (44 pig and other poultry) added as <b>Active</b>.', time: '2025-09-11 15:05' },
+            { msg: 'Record for <b>Riverbend</b> (22 pig and other poultry) added as <b>Sold</b>.', time: '2025-09-12 08:50' },
+            { msg: 'Record for <b>Sunnybrook</b> (36 pig and other poultry) added as <b>Active</b>.', time: '2025-09-13 14:10' },
+            { msg: 'Record for <b>Hilltop</b> (29 pig and other poultry) added as <b>Active</b>.', time: '2025-09-14 16:00' },
+            { msg: 'Record for <b>Cedar Point</b> (31 pig and other poultry) added as <b>Deceased</b>.', time: '2025-09-15 11:40' },
+            { msg: 'Record for <b>Willow Creek</b> (24 pig and other poultry) added as <b>Sold</b>.', time: '2025-09-16 13:55' },
+            { msg: 'Record for <b>Pine Ridge</b> (38 pig and other poultry) added as <b>Active</b>.', time: '2025-09-17 10:20' }
+        ];
+        localStorage.setItem('poultryActivityLogs', JSON.stringify(demoLogs));
+    }
+});
+</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body style="font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(120deg,#f0fff0,#e0f7fa);margin:0;padding:0;">
+    <h2 style="text-align:center;color:#258543;margin:30px 0 10px 0;letter-spacing:1px;">Poultry Farm Dashboard</h2>
+    <!-- Live Stats -->
+    <div id="poultryStats" style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;">
+        <div style="background:#fff;border-radius:10px;box-shadow:0 2px 8px #0001;padding:18px 32px;min-width:180px;text-align:center;">
+            <div style="font-size:1.1em;color:#258543;font-weight:bold;">Total Records</div>
+            <div id="statTotal" style="font-size:2em;margin-top:6px;">0</div>
+        </div>
+        <div style="background:#fff;border-radius:10px;box-shadow:0 2px 8px #0001;padding:18px 32px;min-width:180px;text-align:center;">
+            <div style="font-size:1.1em;color:#258543;font-weight:bold;">Total Pig and Other Poultry</div>
+            <div id="statBirds" style="font-size:2em;margin-top:6px;">0</div>
+        </div>
+        <div style="background:#fff;border-radius:10px;box-shadow:0 2px 8px #0001;padding:18px 32px;min-width:220px;text-align:center;">
+            <div style="font-size:1.1em;color:#258543;font-weight:bold;">Last Entry</div>
+            <div id="statLast" style="font-size:1.1em;margin-top:6px;color:#333;">-</div>
+        </div>
+    </div>
+
+    <!-- Add Record Form -->
+    <div style="background:#fff;max-width:600px;margin:0 auto 24px auto;padding:24px 18px 18px 18px;border-radius:10px;box-shadow:0 2px 8px #0002;">
+        <h3 style="color:#258543;margin-bottom:10px;">Add Poultry Record</h3>
+        <label>Farm Name</label>
+        <input id="farmName" type="text" placeholder="Farm Name" style="width:100%;padding:10px;margin-bottom:8px;border-radius:6px;border:1px solid #ccc;">
+        <label>Pig and Other Poultry Count</label>
+        <input id="birdCount" type="number" min="1" placeholder="Number of Pig and Other Poultry" style="width:100%;padding:10px;margin-bottom:8px;border-radius:6px;border:1px solid #ccc;">
+        <label>Batch Date</label>
+        <input id="batchDate" type="date" style="width:100%;padding:10px;margin-bottom:8px;border-radius:6px;border:1px solid #ccc;">
+        <label>Status</label>
+        <select id="status" style="width:100%;padding:10px;margin-bottom:8px;border-radius:6px;border:1px solid #ccc;">
+            <option value="Active">Active</option>
+            <option value="Sold">Sold</option>
+            <option value="Deceased">Deceased</option>
+        </select>
+        <button onclick="addPoultryRecord()" style="background:#258543;color:#fff;padding:10px 18px;border:none;border-radius:6px;cursor:pointer;font-size:1em;margin-top:8px;">Add Record</button>
+    </div>
+
+    <!-- Search/Filter/Export/Log -->
+    <div style="max-width:900px;margin:0 auto 10px auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <input id="searchBox" type="text" placeholder="Search..." style="flex:1;min-width:180px;padding:8px 12px;border-radius:6px;border:1px solid #ccc;">
+        <select id="filterStatus" style="padding:8px 12px;border-radius:6px;border:1px solid #ccc;">
+            <option value="">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Sold">Sold</option>
+            <option value="Deceased">Deceased</option>
+        </select>
+        <button onclick="exportCSV()" style="background:#258543;color:#fff;padding:8px 16px;border:none;border-radius:6px;cursor:pointer;">Export CSV</button>
+        <button onclick="openLogPanel()" style="background:#004d40;color:#fff;padding:8px 16px;border:none;border-radius:6px;cursor:pointer;">Activity Log</button>
+    </div>
+
+    <!-- Records Table -->
+    <div style="background:#fff;max-width:900px;margin:0 auto 24px auto;padding:18px;border-radius:10px;box-shadow:0 2px 8px #0002;">
+        <h3 style="color:#258543;margin-bottom:10px;">Poultry Records</h3>
+        <table style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr style="background:#258543;color:#fff;">
+                    <th>Farm Name</th>
+                    <th>Pig and Other Poultry</th>
+                    <th>Batch Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="recordsTable"></tbody>
+        </table>
+    </div>
+
+    <!-- Activity Log Panel -->
+    <div id="logPanel" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#0005;z-index:9999;align-items:center;justify-content:center;">
+        <div style="background:#fff;padding:24px 18px 18px 18px;border-radius:12px;max-width:400px;width:90vw;max-height:80vh;overflow-y:auto;box-shadow:0 4px 24px #0003;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <span style="font-weight:bold;font-size:1.1em;color:#258543;">Activity Log</span>
+                <span style="cursor:pointer;font-size:22px;" onclick="closeLogPanel()">&times;</span>
+            </div>
+            <div id="logList" style="font-size:0.98em;"></div>
+        </div>
+    </div>
+
+    <script>
+    // Persistent storage
+    let poultryRecords = JSON.parse(localStorage.getItem('poultryRecords') || '[]');
+    let activityLogs = JSON.parse(localStorage.getItem('poultryActivityLogs') || '[]');
+
+    function saveRecords() {
+        localStorage.setItem('poultryRecords', JSON.stringify(poultryRecords));
+    }
+    function saveLogs() {
+        localStorage.setItem('poultryActivityLogs', JSON.stringify(activityLogs));
+    }
+
+    function addActivityLog(msg) {
+        activityLogs.unshift({msg, time: new Date().toLocaleString()});
+        if (activityLogs.length > 50) activityLogs = activityLogs.slice(0, 50);
+        saveLogs();
+    }
+
+    function addPoultryRecord() {
+        const farmName = document.getElementById('farmName').value.trim();
+        const birdCount = document.getElementById('birdCount').value.trim();
+        const batchDate = document.getElementById('batchDate').value;
+        const status = document.getElementById('status').value;
+        if (!farmName || !birdCount || !batchDate) {
+            alert('Please fill all required fields.');
+            return;
+        }
+        const rec = { farmName, birdCount: parseInt(birdCount), batchDate, status };
+        poultryRecords.push(rec);
+        saveRecords();
+        addActivityLog(`Record for <b>${farmName}</b> (${birdCount} pig and other poultry) added as <b>${status}</b>.`);
+        renderRecords();
+        updateStats();
+        clearForm();
+    }
+
+    function renderRecords() {
+        let filtered = poultryRecords;
+        const search = document.getElementById('searchBox').value.trim().toLowerCase();
+        const statusF = document.getElementById('filterStatus').value;
+        if (search) {
+            filtered = filtered.filter(r => Object.values(r).some(val => (val+"").toLowerCase().includes(search)));
+        }
+        if (statusF) {
+            filtered = filtered.filter(r => r.status === statusF);
+        }
+        const tbody = document.getElementById('recordsTable');
+        tbody.innerHTML = '';
+        filtered.forEach((rec, idx) => {
+            tbody.innerHTML += `<tr>
+                <td>${rec.farmName}</td>
+                <td>${rec.birdCount}</td>
+                <td>${rec.batchDate}</td>
+                <td>${rec.status}</td>
+                <td><button onclick="deleteRecord(${idx})" style="background:#c62828;color:#fff;padding:6px 12px;border-radius:5px;border:none;cursor:pointer;font-size:13px;">Delete</button></td>
+            </tr>`;
+        });
+        if (filtered.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No records found.</td></tr>';
+    }
+
+    function deleteRecord(idx) {
+        const rec = poultryRecords[idx];
+        addActivityLog(`Record for <b>${rec.farmName}</b> (${rec.birdCount} pig and other poultry) deleted.`);
+        poultryRecords.splice(idx, 1);
+        saveRecords();
+        renderRecords();
+        updateStats();
+    }
+
+    function clearForm() {
+        document.getElementById('farmName').value = '';
+        document.getElementById('birdCount').value = '';
+        document.getElementById('batchDate').value = '';
+        document.getElementById('status').value = 'Active';
+    }
+
+    function updateStats() {
+        document.getElementById('statTotal').textContent = poultryRecords.length;
+        let totalBirds = 0;
+        let last = '-';
+        if (poultryRecords.length > 0) {
+            poultryRecords.forEach(r => { if (!isNaN(r.birdCount)) totalBirds += r.birdCount; });
+            const lastRec = poultryRecords[poultryRecords.length-1];
+            last = `<b>${lastRec.farmName}</b> <br><span style='font-size:0.95em;color:#258543;'>${lastRec.batchDate}</span>`;
+        }
+        document.getElementById('statBirds').textContent = totalBirds;
+        document.getElementById('statLast').innerHTML = last;
+    }
+
+    // Search/filter listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('searchBox').addEventListener('input', renderRecords);
+        document.getElementById('filterStatus').addEventListener('change', renderRecords);
+        renderRecords();
+        updateStats();
+    });
+
+    // Export to CSV
+    function exportCSV() {
+        if (!poultryRecords.length) { alert('No records to export.'); return; }
+        let csv = 'Farm Name,Pig and Other Poultry,Batch Date,Status\n';
+        poultryRecords.forEach(r => {
+            csv += [r.farmName, r.birdCount, r.batchDate, r.status].map(x => '"'+(x||'').replace(/"/g,'""')+'"').join(',') + '\n';
+        });
+        const blob = new Blob([csv], {type:'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'poultry_records.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Activity log panel
+    function openLogPanel() {
+        document.getElementById('logPanel').style.display = 'flex';
+        renderLogList();
+    }
+    function closeLogPanel() {
+        document.getElementById('logPanel').style.display = 'none';
+    }
+    function renderLogList() {
+        const logList = document.getElementById('logList');
+        if (!activityLogs.length) {
+            logList.innerHTML = '<div style="color:#888;">No activity yet.</div>';
+            return;
+        }
+        logList.innerHTML = activityLogs.map(l => `<div style='margin-bottom:10px;'><span style='color:#258543;font-weight:bold;'>[${l.time}]</span> <span>${l.msg}</span></div>`).join('');
+    }
+    </script>
+</body>
+</html>

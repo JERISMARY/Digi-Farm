@@ -1,0 +1,155 @@
+<script>
+// DEMO DATA INJECTOR: Only runs if no data exists
+document.addEventListener('DOMContentLoaded', function() {
+  if (!localStorage.getItem('farms')) {
+    const demoFarms = [
+      { farmName: 'Green Valley', inchargeName: 'Amit Kumar', address: 'Ranchi, Jharkhand', animalCount: 120, animalDetails: 'Pigs: 80\nPoultry: 40', createdAt: '2025-09-01 10:00', username: 'greenvalley', password: 'greenvalley123' },
+      { farmName: 'Sunrise Farm', inchargeName: 'Priya Singh', address: 'Jamshedpur, Jharkhand', animalCount: 90, animalDetails: 'Pigs: 50\nPoultry: 40', createdAt: '2025-09-03 14:30', username: 'sunrisefarm', password: 'sunrise2025' },
+      { farmName: 'Blue River', inchargeName: 'Rahul Das', address: 'Dhanbad, Jharkhand', animalCount: 60, animalDetails: 'Pigs: 60', createdAt: '2025-09-05 09:15', username: 'blueriver', password: 'blueriver2025' }
+    ];
+    localStorage.setItem('farms', JSON.stringify(demoFarms));
+  }
+});
+</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>View Farms - Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f8f9fa;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #258543;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background: #258543;
+      color: #fff;
+    }
+    tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+    .back-btn {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 10px 20px;
+      background: #258543;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .back-btn:hover {
+      background: #1a492d;
+    }
+  </style>
+</head>
+<body>
+  <h1>All Farms</h1>
+  <div id="dashboard" style="display: flex; gap: 24px; justify-content: center; margin: 20px 0 10px 0; flex-wrap: wrap;">
+    <div style="background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 18px 32px; min-width: 180px; text-align: center;">
+      <div style="font-size: 1.2em; color: #258543; font-weight: bold;">Total Farms</div>
+      <div id="totalFarms" style="font-size: 2em; margin-top: 6px;">0</div>
+    </div>
+    <div style="background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 18px 32px; min-width: 180px; text-align: center;">
+      <div style="font-size: 1.2em; color: #258543; font-weight: bold;">Total Animals</div>
+      <div id="totalAnimals" style="font-size: 2em; margin-top: 6px;">0</div>
+    </div>
+  </div>
+  <button class="back-btn" onclick="window.location.href='index.html'">⬅ Back to Portal</button>
+  <input type="text" id="searchBox" placeholder="Search by any field..." style="width: 100%; max-width: 400px; margin: 10px 0 20px 0; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 1em;">
+  <table id="farmsTable">
+    <thead>
+      <tr>
+        <th>Farm Name</th>
+        <th>Incharge Name</th>
+        <th>Address</th>
+        <th>Number of Animals</th>
+        <th>Animals Detail</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    let allFarms = [];
+
+    function renderFarms(farms) {
+      const tbody = document.querySelector("#farmsTable tbody");
+      tbody.innerHTML = "";
+      if (farms.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>No farms found.</td></tr>";
+        return;
+      }
+      farms.forEach(farm => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${farm.farmName || ''}</td>
+          <td>${farm.inchargeName || ''}</td>
+          <td>${farm.address || ''}</td>
+          <td>${farm.animalCount || ''}</td>
+          <td>${farm.animalDetails || ''}</td>
+          <td>${farm.createdAt || ''}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function updateDashboard(farms) {
+      document.getElementById('totalFarms').textContent = farms.length;
+      let totalAnimals = 0;
+      farms.forEach(farm => {
+        const n = parseInt(farm.animalCount);
+        if (!isNaN(n)) totalAnimals += n;
+      });
+      document.getElementById('totalAnimals').textContent = totalAnimals;
+    }
+
+    function loadFarms() {
+      allFarms = JSON.parse(localStorage.getItem("farms")) || [];
+      renderFarms(allFarms);
+      updateDashboard(allFarms);
+    }
+
+    // Search/filter functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      loadFarms();
+      const searchBox = document.getElementById('searchBox');
+      searchBox.addEventListener('input', function() {
+        const query = searchBox.value.trim().toLowerCase();
+        if (!query) {
+          renderFarms(allFarms);
+          updateDashboard(allFarms);
+          return;
+        }
+        const filtered = allFarms.filter(farm => {
+          return Object.values(farm).some(val =>
+            (val+"").toLowerCase().includes(query)
+          );
+        });
+        renderFarms(filtered);
+        updateDashboard(filtered);
+      });
+    });
+  </script>
+</body>
+</html>
